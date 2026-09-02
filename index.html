@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SkyPVP Arena - Multiplayer Floating Island Battle</title>
+    <title>SkyPVP Arena - Fixed Collision & Multiplayer</title>
     <style>
         body { margin: 0; overflow: hidden; background-color: #0b1d3a; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; user-select: none; }
         #menu {
@@ -39,7 +39,7 @@
 
     <div id="menu">
         <h1>SkyPVP Arena</h1>
-        <p>A fast-paced multiplayer floating island combat game! Collect magic orbs, upgrade your sword, and battle friends.</p>
+        <p>Collision fixed! Explore floating islands, shoot energy orbs, and battle friends.</p>
         <div>
             <button class="btn" id="startBtn">Singleplayer Practice</button>
             <button class="btn" id="hostOnlineBtn" style="background:#00bcd4;">Host Arena Match</button>
@@ -51,7 +51,7 @@
     <div id="hud">
         Health: <span id="healthDisplay" style="color:#ff0055;">100 / 100</span><br>
         Score / Kills: <span id="scoreDisplay" style="color:#00ffcc;">0</span><br>
-        <span style="font-size:13px; color:#aaa;">WASD to Move | Space to Jump | Click to Attack / Shoot Energy Orb</span>
+        <span style="font-size:13px; color:#aaa;">WASD to Move | Space to Jump | Click to Shoot Energy Orb | V to Unlock Mouse</span>
     </div>
 
     <div id="crosshair"></div>
@@ -63,7 +63,6 @@
         let myId = '';
         let isOnline = false;
         let remotePlayer;
-        let remotePlayerHealth = 100;
 
         const menu = document.getElementById('menu');
         const roomInfo = document.getElementById('roomInfo');
@@ -114,7 +113,6 @@
                         remotePlayer.rotation.y = data.ry;
                     }
                 } else if (data.type === 'attack') {
-                    // Trigger visual slash or hit effect from opponent
                     spawnEnergyOrb(data.x, data.y, data.z, data.dx, data.dy, data.dz, false);
                 } else if (data.type === 'damage') {
                     playerHealth = Math.max(0, playerHealth - data.amount);
@@ -128,7 +126,7 @@
             });
         }
 
-        // --- 3D ARENA SCENE SETUP ---
+        // --- 3D SCENE SETUP ---
         const scene = new THREE.Scene();
         scene.background = new THREE.Color(0x0b1d3a);
         scene.fog = new THREE.FogExp2(0x0b1d3a, 0.005);
@@ -149,23 +147,20 @@
         sunLight.castShadow = true;
         scene.add(sunLight);
 
-        // --- FLOATING ISLANDS MAP ---
+        // --- FLOATING ISLANDS MAP & ROBUST COLLISION DATA ---
         const islandsGroup = new THREE.Group();
         scene.add(islandsGroup);
 
         const islandData = [
-            { x: 0, y: 0, z: 0, size: 40 },
-            { x: 60, y: 5, z: -60, size: 25 },
-            { x: -60, y: 8, z: -60, size: 25 },
-            { x: 60, y: 5, z: 60, size: 25 },
-            { x: -60, y: 8, z: 60, size: 25 },
-            { x: 0, y: 15, z: -110, size: 30 } // Boss Island
+            { x: 0, y: 0, z: 0, size: 45 },
+            { x: 70, y: 5, z: -70, size: 30 },
+            { x: -70, y: 8, z: -70, size: 30 },
+            { x: 70, y: 5, z: 70, size: 30 },
+            { x: -70, y: 8, z: 70, size: 30 },
+            { x: 0, y: 15, z: -120, size: 35 }
         ];
 
-        const solidObjects = [];
-
         islandData.forEach(data => {
-            // Island Base (Rock)
             const rockGeo = new THREE.ConeGeometry(data.size, data.size * 0.8, 7);
             const rockMat = new THREE.MeshStandardMaterial({ color: 0x3a4b65, roughness: 0.9 });
             const rock = new THREE.Mesh(rockGeo, rockMat);
@@ -173,23 +168,20 @@
             rock.rotation.x = Math.PI;
             islandsGroup.add(rock);
 
-            // Island Top (Grass/Stone)
-            const topGeo = new THREE.CylinderGeometry(data.size, data.size * 0.9, 3, 16);
+            const topGeo = new THREE.CylinderGeometry(data.size, data.size * 0.9, 4, 16);
             const topMat = new THREE.MeshStandardMaterial({ color: 0x1b4332, roughness: 0.6 });
             const top = new THREE.Mesh(topGeo, topMat);
             top.position.set(data.x, data.y, data.z);
             islandsGroup.add(top);
-            solidObjects.push(top);
 
-            // Add floating crystals or pillars for atmosphere
-            const pillarGeo = new THREE.BoxGeometry(3, 12, 3);
+            const pillarGeo = new THREE.BoxGeometry(3, 14, 3);
             const pillarMat = new THREE.MeshStandardMaterial({ color: 0x00ffcc, emissive: 0x00ffcc, emissiveIntensity: 0.5 });
             const pillar = new THREE.Mesh(pillarGeo, pillarMat);
-            pillar.position.set(data.x + (data.size * 0.4), data.y + 6, data.z + (data.size * 0.4));
+            pillar.position.set(data.x + (data.size * 0.4), data.y + 7, data.z + (data.size * 0.4));
             islandsGroup.add(pillar);
         });
 
-        // --- PLAYER CHARACTER & OPPONENT MODELS ---
+        // --- PLAYER MODELS ---
         function createPlayerModel(isRemote) {
             const group = new THREE.Group();
             const armorMat = new THREE.MeshStandardMaterial({ color: isRemote ? 0xff0055 : 0x00ffcc, roughness: 0.3 });
@@ -203,12 +195,10 @@
             head.position.y = 3.8;
             group.add(head);
 
-            // Glowing visor
             const visor = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.3, 0.2), armorMat);
             visor.position.set(0, 3.8, -0.45);
             group.add(visor);
 
-            // Weapon (Energy Sword in hand)
             const swordBlade = new THREE.Mesh(new THREE.BoxGeometry(0.2, 2.5, 0.2), armorMat);
             swordBlade.position.set(0.9, 2.2, -0.5);
             group.add(swordBlade);
@@ -223,7 +213,7 @@
         remotePlayer.visible = false;
         scene.add(remotePlayer);
 
-        // --- ENERGY PROJECTILES SYSTEM ---
+        // --- PROJECTILES ---
         const activeProjectiles = [];
 
         function spawnEnergyOrb(x, y, z, dx, dy, dz, sendNetwork) {
@@ -256,7 +246,7 @@
             spawnEnergyOrb(spawnPos.x, spawnPos.y, spawnPos.z, dir.x, dir.y, dir.z, true);
         });
 
-        // --- CONTROLS & MOVEMENT ---
+        // --- CONTROLS & PHYSICS ---
         const controls = new THREE.PointerLockControls(camera, document.body);
         let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false, canJump = false;
         let velocity = new THREE.Vector3();
@@ -295,7 +285,7 @@
             if (controls.isLocked) {
                 velocity.x -= velocity.x * 10.0 * delta;
                 velocity.z -= velocity.z * 10.0 * delta;
-                velocity.y -= 30.0 * delta;
+                velocity.y -= 35.0 * delta; // Gravity
 
                 direction.z = Number(moveForward) - Number(moveBackward);
                 direction.x = Number(moveRight) - Number(moveLeft);
@@ -309,24 +299,35 @@
 
                 camera.position.y += velocity.y * delta;
 
-                // Simple Island collision check
-                let onIsland = false;
+                // FIXED ROBUST COLLISION ENGINE
+                let grounded = false;
+                const playerFootY = camera.position.y - 3.5;
+
                 islandData.forEach(data => {
                     const distXZ = Math.hypot(camera.position.x - data.x, camera.position.z - data.z);
-                    const surfaceY = data.y + 2.5;
-                    if (distXZ < data.size && camera.position.y >= surfaceY && camera.position.y <= surfaceY + 4 && velocity.y <= 0) {
-                        camera.position.y = surfaceY;
-                        velocity.y = 0;
-                        canJump = true;
-                        onIsland = true;
+                    const surfaceTopY = data.y + 2.0;
+                    const surfaceBottomY = data.y - 2.0;
+
+                    // If player is within island radius and falling through or standing near the top surface
+                    if (distXZ < data.size) {
+                        if (playerFootY <= surfaceTopY && playerFootY >= surfaceBottomY && velocity.y <= 0) {
+                            camera.position.y = surfaceTopY + 3.5;
+                            velocity.y = 0;
+                            canJump = true;
+                            grounded = true;
+                        }
                     }
                 });
 
+                if (!grounded && velocity.y < 0) {
+                    canJump = false;
+                }
+
                 // Fall into abyss condition
-                if (camera.position.y < -40) {
+                if (camera.position.y < -50) {
                     playerHealth = Math.max(0, playerHealth - 25);
                     document.getElementById('healthDisplay').innerText = `${playerHealth} / 100`;
-                    camera.position.set(0, 15, 0);
+                    camera.position.set(0, 20, 0);
                     velocity.y = 0;
                 }
 
@@ -336,7 +337,6 @@
                     p.mesh.position.addScaledVector(p.dir, p.speed * delta);
                     p.life -= delta;
 
-                    // Check hit with remote player
                     if (remotePlayer.visible && p.mesh.position.distanceTo(remotePlayer.position) < 3.0) {
                         playerScore += 10;
                         document.getElementById('scoreDisplay').innerText = playerScore;
