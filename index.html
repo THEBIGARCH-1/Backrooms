@@ -3,12 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Backrooms - 3D Level 0</title>
+    <title>The Backrooms - Collision Update</title>
     <style>
-        /* Make the game take up the whole screen */
         body { margin: 0; overflow: hidden; background-color: #000; font-family: "Courier New", Courier, monospace; }
-        
-        /* The start screen overlay */
         #blocker {
             position: absolute; width: 100%; height: 100%;
             background-color: rgba(0,0,0,0.8);
@@ -17,15 +14,12 @@
         }
         #instructions { font-size: 20px; line-height: 1.5; }
         .danger { color: #ff4444; font-weight: bold; }
-        
-        /* Simple crosshair in the center of the screen */
         #crosshair {
             position: absolute; top: 50%; left: 50%; width: 6px; height: 6px;
             background-color: rgba(255, 255, 255, 0.5); border-radius: 50%;
             transform: translate(-50%, -50%); pointer-events: none; z-index: 5;
         }
     </style>
-    
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/PointerLockControls.js"></script>
 </head>
@@ -36,99 +30,78 @@
             <h1 style="font-size: 40px;">THE BACKROOMS</h1>
             <p>Click anywhere to enter.</p>
             <p><b>W, A, S, D</b> = Move<br><b>Mouse</b> = Look Around<br><b>ESC</b> = Pause</p>
-            <p class="danger">Don't lose your way.</p>
+            <p class="danger">Watch your step. The walls are solid now.</p>
         </div>
     </div>
     
     <div id="crosshair"></div>
 
     <script>
-        // --- 1. SETUP SCENE, CAMERA, AND RENDERER ---
+        // --- 1. SETUP ---
         const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x9a8511); // Sickly mustard yellow
-        scene.fog = new THREE.Fog(0x9a8511, 0, 80);   // Heavy fog to limit visibility
+        scene.background = new THREE.Color(0x9a8511);
+        scene.fog = new THREE.Fog(0x9a8511, 0, 60);
 
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 1, 1000);
-        camera.position.y = 10; // Eye level
+        camera.position.y = 12; // Adjusted eye level
 
         const renderer = new THREE.WebGLRenderer({ antialias: false });
         renderer.setSize(window.innerWidth, window.innerHeight);
         document.body.appendChild(renderer.domElement);
 
-        // --- 2. LIGHTING ---
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6); // Base light
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
         scene.add(ambientLight);
-        const dirLight = new THREE.DirectionalLight(0xfffae6, 0.4); // Artificial fluorescent feel
-        dirLight.position.set(10, 20, 10);
-        scene.add(dirLight);
 
-        // --- 3. BUILD THE ENVIRONMENT (Floor, Ceiling, Walls) ---
-        const textureLoader = new THREE.TextureLoader();
-        
-        // Materials (Using solid colors for maximum retro/uncanny vibe without needing image files)
+        // --- 2. BUILD THE ENVIRONMENT ---
         const floorMat = new THREE.MeshLambertMaterial({ color: 0x5a5022 }); 
         const ceilingMat = new THREE.MeshLambertMaterial({ color: 0xd4d4cc });
-        const wallMat = new THREE.MeshLambertMaterial({ color: 0xbdab40 }); // Yellow wallpaper color
+        const wallMat = new THREE.MeshLambertMaterial({ color: 0xbdab40 });
 
-        // Floor
         const floorGeo = new THREE.PlaneGeometry(2000, 2000);
         const floor = new THREE.Mesh(floorGeo, floorMat);
         floor.rotation.x = -Math.PI / 2;
         scene.add(floor);
 
-        // Ceiling
         const ceiling = new THREE.Mesh(floorGeo, ceilingMat);
         ceiling.rotation.x = Math.PI / 2;
-        ceiling.position.y = 20;
+        ceiling.position.y = 40; // Raised the ceiling much higher!
         scene.add(ceiling);
 
-        // Generate Random Staggered Walls
-        const wallGeo = new THREE.BoxGeometry(20, 20, 2);
+        // Array to hold our walls for collision detection
+        const objects = []; 
+
+        // Make the walls much taller and bigger
+        const wallGeo = new THREE.BoxGeometry(30, 40, 2); 
         for (let i = 0; i < 400; i++) {
             const wall = new THREE.Mesh(wallGeo, wallMat);
-            
-            // Randomly scatter walls across a massive area
             wall.position.x = (Math.random() - 0.5) * 800;
             wall.position.z = (Math.random() - 0.5) * 800;
-            wall.position.y = 10;
+            wall.position.y = 20; // Half of height to sit on floor
             
-            // Randomly rotate some walls 90 degrees to create a maze feel
-            if (Math.random() > 0.5) {
-                wall.rotation.y = Math.PI / 2;
-            }
+            if (Math.random() > 0.5) wall.rotation.y = Math.PI / 2;
+            
             scene.add(wall);
+            objects.push(wall); // Add to collision array
         }
 
-        // --- 4. FIRST PERSON CONTROLS ---
+        // --- 3. CONTROLS & COLLISION SETUP ---
         const controls = new THREE.PointerLockControls(camera, document.body);
         const blocker = document.getElementById('blocker');
         const instructions = document.getElementById('instructions');
 
-        // Lock mouse pointer to screen when clicked
-        instructions.addEventListener('click', function () {
-            controls.lock();
-        });
-
-        // Hide menu when playing, show when paused (ESC)
-        controls.addEventListener('lock', function () {
-            blocker.style.display = 'none';
-        });
-        controls.addEventListener('unlock', function () {
-            blocker.style.display = 'flex';
-        });
+        instructions.addEventListener('click', () => controls.lock());
+        controls.addEventListener('lock', () => blocker.style.display = 'none');
+        controls.addEventListener('unlock', () => blocker.style.display = 'flex');
         scene.add(controls.getObject());
 
-        // --- 5. MOVEMENT LOGIC ---
-        let moveForward = false;
-        let moveBackward = false;
-        let moveLeft = false;
-        let moveRight = false;
-
+        let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false;
         const velocity = new THREE.Vector3();
         const direction = new THREE.Vector3();
         let prevTime = performance.now();
 
-        // Listen for key presses
+        // Raycaster acts like a laser pointer to detect walls in front of us
+        const raycaster = new THREE.Raycaster(new THREE.Vector3(), new THREE.Vector3(), 0, 5);
+
         document.addEventListener('keydown', (event) => {
             switch (event.code) {
                 case 'KeyW': moveForward = true; break;
@@ -137,7 +110,6 @@
                 case 'KeyD': moveRight = true; break;
             }
         });
-
         document.addEventListener('keyup', (event) => {
             switch (event.code) {
                 case 'KeyW': moveForward = false; break;
@@ -147,40 +119,54 @@
             }
         });
 
-        // --- 6. GAME ANIMATION LOOP ---
+        // --- 4. GAME LOOP ---
         function animate() {
             requestAnimationFrame(animate);
 
             if (controls.isLocked === true) {
                 const time = performance.now();
-                const delta = (time - prevTime) / 1000; // Calculate time between frames
+                const delta = (time - prevTime) / 1000;
 
-                // Smooth deceleration
                 velocity.x -= velocity.x * 10.0 * delta;
                 velocity.z -= velocity.z * 10.0 * delta;
 
-                // Determine direction based on keys pressed
                 direction.z = Number(moveForward) - Number(moveBackward);
                 direction.x = Number(moveRight) - Number(moveLeft);
-                direction.normalize(); // Ensures consistent diagonal speed
+                direction.normalize();
 
-                // Apply movement speed
+                // COLLISION DETECTION LOGIC
+                const controlObj = controls.getObject();
+                raycaster.ray.origin.copy(controlObj.position);
+                
+                // Get the direction the camera is facing
+                const camDirection = new THREE.Vector3();
+                controls.getDirection(camDirection);
+                
+                // Only check collision if we are moving forward
+                if (moveForward) {
+                    camDirection.y = 0; // Don't check up/down
+                    raycaster.ray.direction.copy(camDirection);
+                    const intersections = raycaster.intersectObjects(objects);
+                    
+                    // If we hit a wall within 5 units, stop forward movement
+                    if (intersections.length > 0) {
+                        velocity.z = Math.max(0, velocity.z); 
+                    }
+                }
+
                 if (moveForward || moveBackward) velocity.z -= direction.z * 400.0 * delta;
                 if (moveLeft || moveRight) velocity.x -= direction.x * 400.0 * delta;
 
-                // Move the camera
                 controls.moveRight(-velocity.x * delta);
                 controls.moveForward(-velocity.z * delta);
 
                 prevTime = time;
             }
-
             renderer.render(scene, camera);
         }
 
-        animate(); // Start the loop
+        animate();
 
-        // Keep the game full screen if the browser window is resized
         window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
