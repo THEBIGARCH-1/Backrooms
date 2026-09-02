@@ -3,451 +3,271 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Backrooms - Entity AI & Body Awareness</title>
+    <title>Neon Velocity - Online Hovercraft Racing</title>
     <style>
-        body { margin: 0; overflow: hidden; background-color: #000; font-family: "Courier New", Courier, monospace; }
-        #blocker {
+        body { margin: 0; overflow: hidden; background-color: #03030c; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; user-select: none; }
+        #menu {
             position: absolute; width: 100%; height: 100%;
-            background-color: rgba(0,0,0,0.85);
+            background: linear-gradient(135deg, #090314, #1a0b36, #05020c);
             display: flex; flex-direction: column; justify-content: center; align-items: center;
-            color: #d4b522; text-align: center; cursor: pointer; z-index: 10;
+            color: #fff; z-index: 10; text-align: center;
         }
-        #instructions { font-size: 20px; line-height: 1.5; }
-        .danger { color: #ff4444; font-weight: bold; }
-        #crosshair {
-            position: absolute; top: 50%; left: 50%; width: 4px; height: 4px;
-            background-color: rgba(255, 255, 255, 0.3); border-radius: 50%;
-            transform: translate(-50%, -50%); pointer-events: none; z-index: 5;
+        h1 { font-size: 55px; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 6px; color: #00f0ff; text-shadow: 0 0 25px rgba(0,240,255,0.6); }
+        p { color: #a19fc8; font-size: 18px; margin-bottom: 30px; }
+        .btn {
+            background: linear-gradient(45deg, #00f0ff, #7000ff); color: #fff; border: none; padding: 16px 45px;
+            font-size: 18px; font-weight: bold; border-radius: 30px; cursor: pointer;
+            transition: 0.3s; box-shadow: 0 0 20px rgba(0,240,255,0.4); text-transform: uppercase; letter-spacing: 2px;
+        }
+        .btn:hover { box-shadow: 0 0 30px #00f0ff, 0 0 50px #7000ff; transform: scale(1.06); }
+        #hud {
+            position: absolute; top: 25px; left: 25px; color: #fff; font-size: 22px;
+            font-weight: bold; pointer-events: none; z-index: 5; text-shadow: 0 0 8px rgba(0,240,255,0.8);
+            background: rgba(10, 5, 25, 0.6); padding: 12px 25px; border-radius: 12px; border: 1px solid rgba(0,240,255,0.3);
+        }
+        #controls-hint {
+            position: absolute; bottom: 25px; left: 50%; transform: translateX(-50%);
+            color: rgba(255,255,255,0.6); font-size: 15px; pointer-events: none; z-index: 5; text-align: center;
         }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/PointerLockControls.js"></script>
+    <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
 </head>
 <body>
 
-    <div id="blocker">
-        <div id="instructions">
-            <h1 style="font-size: 40px;">THE BACKROOMS</h1>
-            <p>Click to enter the endless corridors.</p>
-            <p><b>W, A, S, D</b> = Move | <b>SHIFT</b> = Sprint | <b>Mouse</b> = Look Around<br><b>C</b> = Crouch | <b>ESC</b> = Pause</p>
-            <p class="danger">Something is watching you in the dark. Run if it sees you.</p>
+    <div id="menu">
+        <h1>Neon Velocity</h1>
+        <p>Futuristic Online Hovercraft Circuit. Race with friends!</p>
+        <div style="margin-bottom: 20px;">
+            <button class="btn" id="hostBtn">Host Race Room</button>
+            <span style="margin: 0 20px; color: #555; font-weight: bold;">OR</span>
+            <button class="btn" id="joinBtn" style="background: linear-gradient(45deg, #ff007f, #ffaa00); box-shadow: 0 0 20px rgba(255,0,127,0.4);">Join Room Code</button>
         </div>
+        <div id="roomInfo" style="margin-top: 15px; font-size: 16px; color: #00f0ff; max-width: 500px; line-height: 1.5;"></div>
     </div>
-    
-    <div id="crosshair"></div>
+
+    <div id="hud">Speed: <span id="speedVal">0</span> KM/H</div>
+    <div id="controls-hint"><b>W, A, S, D</b> = Steer & Drive Hovercraft | <b>Mouse</b> = Look Around | <b>ESC</b> = Pause</div>
 
     <script>
-        // --- 1. PROCEDURAL TEXTURES ---
-        function createWallpaperTexture() {
-            const canvas = document.createElement('canvas');
-            canvas.width = 512; canvas.height = 512;
-            const ctx = canvas.getContext('2d');
-            
-            ctx.fillStyle = '#b89938';
-            ctx.fillRect(0, 0, 512, 512);
+        // --- MULTIPLAYER SETUP ---
+        let peer, conn;
+        let isHost = false;
+        let myId = '';
+        let remoteHovercraft;
+        let hasConnected = false;
 
-            ctx.strokeStyle = '#917627';
-            ctx.lineWidth = 3.5;
-            for (let y = 0; y < 512; y += 28) {
-                for (let x = 0; x < 512; x += 28) {
-                    ctx.beginPath();
-                    ctx.moveTo(x, y + 14);
-                    ctx.lineTo(x + 14, y);
-                    ctx.lineTo(x + 32, y + 14);
-                    ctx.stroke();
+        const menu = document.getElementById('menu');
+        const roomInfo = document.getElementById('roomInfo');
+        const speedVal = document.getElementById('speedVal');
+
+        document.getElementById('hostBtn').addEventListener('click', () => {
+            peer = new Peer();
+            peer.on('open', (id) => {
+                myId = id;
+                isHost = true;
+                roomInfo.innerHTML = `Room Code: <b style="color:#fff;font-size:20px;">${id}</b><br>Share this code with your friend! Waiting for connection...`;
+            });
+            peer.on('connection', (connection) => {
+                conn = connection;
+                setupConnection();
+                startRace();
+            });
+        });
+
+        document.getElementById('joinBtn').addEventListener('click', () => {
+            const friendId = prompt("Enter your friend's Room Code:");
+            if (!friendId) return;
+            peer = new Peer();
+            peer.on('open', (id) => {
+                myId = id;
+                isHost = false;
+                conn = peer.connect(friendId);
+                setupConnection();
+                startRace();
+            });
+        });
+
+        function setupConnection() {
+            conn.on('open', () => {
+                roomInfo.innerHTML = "Connected! Initializing track telemetry...";
+                setTimeout(() => {
+                    menu.style.display = 'none';
+                    controls.lock();
+                    hasConnected = true;
+                }, 1200);
+            });
+            conn.on('data', (data) => {
+                if (data.type === 'pos' && remoteHovercraft) {
+                    remoteHovercraft.position.set(data.x, data.y, data.z);
+                    remoteHovercraft.rotation.y = data.ry;
                 }
-            }
-            
-            for (let i = 0; i < 12000; i++) {
-                ctx.fillStyle = `rgba(35, 25, 0, ${Math.random() * 0.07})`;
-                ctx.fillRect(Math.random() * 512, Math.random() * 512, Math.random() * 5, Math.random() * 5);
-            }
-
-            const texture = new THREE.CanvasTexture(canvas);
-            texture.wrapS = THREE.RepeatWrapping;
-            texture.wrapT = THREE.RepeatWrapping;
-            texture.repeat.set(2, 2);
-            return texture;
+            });
         }
 
-        function createCarpetTexture() {
-            const canvas = document.createElement('canvas');
-            canvas.width = 512; canvas.height = 512;
-            const ctx = canvas.getContext('2d');
-            
-            ctx.fillStyle = '#423b1e';
-            ctx.fillRect(0, 0, 512, 512);
-
-            for (let i = 0; i < 30000; i++) {
-                const val = Math.floor(Math.random() * 45);
-                ctx.fillStyle = `rgb(${55 + val}, ${50 + val}, ${25 + val})`;
-                ctx.fillRect(Math.random() * 512, Math.random() * 512, 2, 2);
-            }
-
-            for (let i = 0; i < 40; i++) {
-                const sx = Math.random() * 512, sy = Math.random() * 512, sr = 15 + Math.random() * 35;
-                const grad = ctx.createRadialGradient(sx, sy, 0, sx, sy, sr);
-                grad.addColorStop(0, 'rgba(10, 8, 2, 0.7)');
-                grad.addColorStop(1, 'rgba(10, 8, 2, 0)');
-                ctx.fillStyle = grad;
-                ctx.beginPath();
-                ctx.arc(sx, sy, sr, 0, Math.PI * 2);
-                ctx.fill();
-            }
-
-            const texture = new THREE.CanvasTexture(canvas);
-            texture.wrapS = THREE.RepeatWrapping;
-            texture.wrapT = THREE.RepeatWrapping;
-            texture.repeat.set(100, 100);
-            return texture;
+        function startRace() {
+            setTimeout(() => {
+                if (!hasConnected) {
+                    menu.style.display = 'none';
+                    controls.lock();
+                    hasConnected = true;
+                }
+            }, 2000);
         }
 
-        function createCeilingTexture() {
-            const canvas = document.createElement('canvas');
-            canvas.width = 512; canvas.height = 512;
-            const ctx = canvas.getContext('2d');
-
-            ctx.fillStyle = '#c4c3be';
-            ctx.fillRect(0, 0, 512, 512);
-
-            ctx.fillStyle = '#9c9b96';
-            for (let i = 0; i < 8000; i++) {
-                ctx.fillRect(Math.random() * 512, Math.random() * 512, 2, 2);
-            }
-
-            ctx.strokeStyle = '#22211e';
-            ctx.lineWidth = 10;
-            ctx.strokeRect(0, 0, 512, 512);
-
-            const texture = new THREE.CanvasTexture(canvas);
-            texture.wrapS = THREE.RepeatWrapping;
-            texture.wrapT = THREE.RepeatWrapping;
-            texture.repeat.set(100, 100);
-            return texture;
-        }
-
-        // --- 2. SCENE SETUP ---
+        // --- 3D GRAPHICS & SCENE SETUP ---
         const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x8a7724);
-        scene.fog = new THREE.Fog(0x8a7724, 15, 120);
+        scene.background = new THREE.Color(0x040412);
+        scene.fog = new THREE.FogExp2(0x040412, 0.012);
 
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.5, 1000);
-        let normalEyeHeight = 7.5;
-        let crouchEyeHeight = 4.0;
-        camera.position.y = normalEyeHeight;
+        camera.position.set(0, 6, -12);
 
-        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
         renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = true;
         document.body.appendChild(renderer.domElement);
 
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.3);
+        // Lighting
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
         scene.add(ambientLight);
 
-        // --- 3. CREATE PLAYER BODY MODEL ---
-        const bodyGroup = new THREE.Group();
-        const shirtMat = new THREE.MeshLambertMaterial({ color: 0x223344 });
-        const pantsMat = new THREE.MeshLambertMaterial({ color: 0x1a1a1a });
-        const shoeMat = new THREE.MeshLambertMaterial({ color: 0x111111 });
+        const dirLight = new THREE.DirectionalLight(0x00f0ff, 1.2);
+        dirLight.position.set(50, 80, 50);
+        scene.add(dirLight);
 
-        const torsoGeo = new THREE.BoxGeometry(1.8, 2.2, 1.0);
-        const torso = new THREE.Mesh(torsoGeo, shirtMat);
-        torso.position.set(0, -2.2, -0.5);
-        bodyGroup.add(torso);
+        // --- TRACK & SCI-FI ENVIRONMENT ---
+        const trackGroup = new THREE.Group();
+        scene.add(trackGroup);
 
-        const legGeo = new THREE.BoxGeometry(0.7, 3.2, 0.7);
-        const leftLegPivot = new THREE.Group();
-        leftLegPivot.position.set(-0.5, -3.3, -0.5);
-        const leftLeg = new THREE.Mesh(legGeo, pantsMat);
-        leftLeg.position.set(0, -1.6, 0);
-        leftLegPivot.add(leftLeg);
-        
-        const footGeo = new THREE.BoxGeometry(0.8, 0.6, 1.2);
-        const leftFoot = new THREE.Mesh(footGeo, shoeMat);
-        leftFoot.position.set(0, -3.4, 0.2);
-        leftLegPivot.add(leftFoot);
-        bodyGroup.add(leftLegPivot);
+        const floorMat = new THREE.MeshStandardMaterial({ color: 0x0c0b1c, roughness: 0.3, metalness: 0.8 });
+        const trackRoadGeo = new THREE.PlaneGeometry(60, 1000);
+        const trackRoad = new THREE.Mesh(trackRoadGeo, floorMat);
+        trackRoad.rotation.x = -Math.PI / 2;
+        trackRoad.position.set(0, 0, 450);
+        trackGroup.add(trackRoad);
 
-        const rightLegPivot = new THREE.Group();
-        rightLegPivot.position.set(0.5, -3.3, -0.5);
-        const rightLeg = new THREE.Mesh(legGeo, pantsMat);
-        rightLeg.position.set(0, -1.6, 0);
-        rightLegPivot.add(rightLeg);
+        // Glowing track side barriers & neon arches
+        const barrierMat = new THREE.MeshBasicMaterial({ color: 0x00f0ff });
+        const archMat = new THREE.MeshBasicMaterial({ color: 0xff007f });
 
-        const rightFoot = new THREE.Mesh(footGeo, shoeMat);
-        rightFoot.position.set(0, -3.4, 0.2);
-        rightLegPivot.add(rightFoot);
-        bodyGroup.add(rightLegPivot);
+        for (let z = 0; z < 900; z += 50) {
+            // Left & Right neon lane barriers
+            const leftBar = new THREE.Mesh(new THREE.BoxGeometry(2, 4, 45), barrierMat);
+            leftBar.position.set(-31, 2, z);
+            trackGroup.add(leftBar);
 
-        camera.add(bodyGroup);
-        scene.add(camera);
+            const rightBar = new THREE.Mesh(new THREE.BoxGeometry(2, 4, 45), barrierMat);
+            rightBar.position.set(31, 2, z);
+            trackGroup.add(rightBar);
 
-        // --- 4. CREATE ENTITY (Skin-stealer / Tall Entity model matching user reference) ---
-        const entityGroup = new THREE.Group();
-        const entityMat = new THREE.MeshBasicMaterial({ color: 0x111111 }); // Dark unsettling silhouette
-
-        // Distorted tall body / limbs matching reference photo
-        const eTorso = new THREE.Mesh(new THREE.BoxGeometry(1.2, 5.0, 0.8), entityMat);
-        eTorso.position.y = 4.0;
-        entityGroup.add(eTorso);
-
-        const eHead = new THREE.Mesh(new THREE.BoxGeometry(1.4, 1.4, 1.4), entityMat);
-        eHead.position.y = 7.2;
-        entityGroup.add(eHead);
-
-        const eArmGeo = new THREE.BoxGeometry(0.4, 5.5, 0.4);
-        const eLeftArm = new THREE.Mesh(eArmGeo, entityMat);
-        eLeftArm.position.set(-1.0, 3.5, 0);
-        entityGroup.add(eLeftArm);
-
-        const eRightArm = new THREE.Mesh(eArmGeo, entityMat);
-        eRightArm.position.set(1.0, 3.5, 0);
-        entityGroup.add(eRightArm);
-
-        const eLegGeo = new THREE.BoxGeometry(0.5, 5.0, 0.5);
-        const eLeftLeg = new THREE.Mesh(eLegGeo, entityMat);
-        eLeftLeg.position.set(-0.5, 0.5, 0);
-        entityGroup.add(eLeftLeg);
-
-        const eRightLeg = new THREE.Mesh(eLegGeo, entityMat);
-        eRightLeg.position.set(0.5, 0.5, 0);
-        entityGroup.add(eRightLeg);
-
-        // Spawn far away initially
-        entityGroup.position.set(50, 0, -80);
-        scene.add(entityGroup);
-
-        // --- 5. ENVIRONMENT & PROCEDURAL CHUNKING SYSTEM ---
-        const wallMat = new THREE.MeshLambertMaterial({ map: createWallpaperTexture() });
-        const floorMat = new THREE.MeshLambertMaterial({ map: createCarpetTexture() });
-        const ceilingMat = new THREE.MeshLambertMaterial({ map: createCeilingTexture() });
-
-        const floorGeo = new THREE.PlaneGeometry(3000, 3000);
-        const floor = new THREE.Mesh(floorGeo, floorMat);
-        floor.rotation.x = -Math.PI / 2;
-        scene.add(floor);
-
-        const ceilingHeight = 16;
-        const ceiling = new THREE.Mesh(floorGeo, ceilingMat);
-        ceiling.rotation.x = Math.PI / 2;
-        ceiling.position.y = ceilingHeight;
-        scene.add(ceiling);
-
-        const objects = [];
-        const activeChunks = new Set();
-        const chunkSize = 120;
-        const wallLength = 40;
-
-        const wallGeoHorizontal = new THREE.BoxGeometry(wallLength, ceilingHeight, 2);
-        const wallGeoVertical = new THREE.BoxGeometry(2, ceilingHeight, wallLength);
-        const lightHousingGeo = new THREE.BoxGeometry(8, 0.6, 4);
-        const lightTubeGeo = new THREE.BoxGeometry(7, 0.2, 3);
-        const lightHousingMat = new THREE.MeshBasicMaterial({ color: 0x1f1f1f });
-        const lightTubeMat = new THREE.MeshBasicMaterial({ color: 0xfffee0 });
-
-        function getPseudoRandom(x, z) {
-            const n = Math.sin(x * 12.9898 + z * 78.233) * 43758.5453;
-            return n - Math.floor(n);
+            // Glowing Overhead Arches
+            const archTop = new THREE.Mesh(new THREE.BoxGeometry(64, 1.5, 3), archMat);
+            archTop.position.set(0, 18, z);
+            trackGroup.add(archTop);
         }
 
-        function generateChunk(chunkX, chunkZ) {
-            const chunkKey = `${chunkX},${chunkZ}`;
-            if (activeChunks.has(chunkKey)) return;
-            activeChunks.add(chunkKey);
+        // --- PLAYER HOVERCRAFT MODEL ---
+        const playerHovercraft = new THREE.Group();
+        const hullMat = new THREE.MeshStandardMaterial({ color: 0x00f0ff, metalness: 0.9, roughness: 0.2 });
+        const cockpitMat = new THREE.MeshStandardMaterial({ color: 0xff007f, emissive: 0xff007f, emissiveIntensity: 0.5 });
 
-            const startX = chunkX * chunkSize;
-            const startZ = chunkZ * chunkSize;
-            const step = 20;
+        const hull = new THREE.Mesh(new THREE.BoxGeometry(3.5, 1.2, 7), hullMat);
+        hull.position.y = 1.5;
+        playerHovercraft.add(hull);
 
-            for (let x = startX; x < startX + chunkSize; x += step) {
-                for (let z = startZ; z < startZ + chunkSize; z += step) {
-                    if (Math.abs(x) < 30 && Math.abs(z) < 30) continue;
+        const cockpit = new THREE.Mesh(new THREE.BoxGeometry(2, 1, 3), cockpitMat);
+        cockpit.position.set(0, 2, 0.5);
+        playerHovercraft.add(cockpit);
 
-                    const rand = getPseudoRandom(x, z);
+        scene.add(playerHovercraft);
 
-                    if (rand < 0.35) {
-                        const isHorizontal = getPseudoRandom(x + 5, z) > 0.5;
-                        const geo = isHorizontal ? wallGeoHorizontal : wallGeoVertical;
-                        const wall = new THREE.Mesh(geo, wallMat);
-                        
-                        wall.position.set(x, ceilingHeight / 2, z);
-                        scene.add(wall);
-                        objects.push(wall);
-                    }
+        // --- REMOTE FRIEND HOVERCRAFT MODEL ---
+        remoteHovercraft = new THREE.Group();
+        const rHull = new THREE.Mesh(new THREE.BoxGeometry(3.5, 1.2, 7), new THREE.MeshStandardMaterial({ color: 0xffaa00, metalness: 0.9 }));
+        rHull.position.y = 1.5;
+        remoteHovercraft.add(rHull);
+        scene.add(remoteHovercraft);
+        remoteHovercraft.position.set(10, 0, 20);
 
-                    if (rand > 0.7 && Math.abs(x % 40) === 0 && Math.abs(z % 40) === 0) {
-                        const housing = new THREE.Mesh(lightHousingGeo, lightHousingMat);
-                        housing.position.set(x, ceilingHeight - 0.3, z);
-                        scene.add(housing);
-
-                        const tube = new THREE.Mesh(lightTubeGeo, lightTubeMat);
-                        tube.position.set(x, ceilingHeight - 0.5, z);
-                        scene.add(tube);
-
-                        const pLight = new THREE.PointLight(0xfffae0, 0.65, 45);
-                        pLight.position.set(x, ceilingHeight - 2, z);
-                        scene.add(pLight);
-                    }
-                }
-            }
-        }
-
-        // --- 6. CONTROLS & COLLISION ---
+        // --- CONTROLS & PHYSICS ---
         const controls = new THREE.PointerLockControls(camera, document.body);
-        const blocker = document.getElementById('blocker');
-        const instructions = document.getElementById('instructions');
-
-        instructions.addEventListener('click', () => controls.lock());
-        
-        controls.addEventListener('lock', () => {
-            blocker.style.display = 'none';
-            prevTime = performance.now();
-        });
-        
-        controls.addEventListener('unlock', () => blocker.style.display = 'flex');
-
-        let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false, isCrouching = false, isSprinting = false;
-        const velocity = new THREE.Vector3();
-        const direction = new THREE.Vector3();
-        let prevTime = performance.now();
-        let headBobTimer = 0;
+        let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false;
+        let speed = 0;
+        let maxSpeed = 120.0;
+        let acceleration = 50.0;
+        let steering = 0;
+        let hovercraftAngle = 0;
 
         document.addEventListener('keydown', (e) => {
-            if (!controls.isLocked) return;
             if (e.code === 'KeyW') moveForward = true;
             if (e.code === 'KeyS') moveBackward = true;
             if (e.code === 'KeyA') moveLeft = true;
             if (e.code === 'KeyD') moveRight = true;
-            if (e.code === 'KeyC') isCrouching = true;
-            if (e.code === 'ShiftLeft' || e.code === 'ShiftRight') isSprinting = true;
         });
         document.addEventListener('keyup', (e) => {
             if (e.code === 'KeyW') moveForward = false;
             if (e.code === 'KeyS') moveBackward = false;
             if (e.code === 'KeyA') moveLeft = false;
             if (e.code === 'KeyD') moveRight = false;
-            if (e.code === 'KeyC') isCrouching = false;
-            if (e.code === 'ShiftLeft' || e.code === 'ShiftRight') isSprinting = false;
         });
 
-        function checkCollision(pos) {
-            const playerRadius = 2.0;
-            const currentHeight = isCrouching ? crouchEyeHeight : normalEyeHeight;
-            const playerBox = new THREE.Box3(
-                new THREE.Vector3(pos.x - playerRadius, 0, pos.z - playerRadius),
-                new THREE.Vector3(pos.x + playerRadius, currentHeight + 2, pos.z + playerRadius)
-            );
-            for (let i = 0; i < objects.length; i++) {
-                const wallBox = new THREE.Box3().setFromObject(objects[i]);
-                if (wallBox.intersectsBox(playerBox)) return true;
-            }
-            return false;
-        }
-
-        // --- 7. ANIMATION LOOP & AI ENTITY LOGIC ---
-        let entityAnimationTimer = 0;
+        // --- GAME LOOP ---
+        let prevTime = performance.now();
 
         function animate() {
             requestAnimationFrame(animate);
 
+            const time = performance.now();
+            const delta = Math.min((time - prevTime) / 1000, 0.1);
+
             if (controls.isLocked) {
-                const time = performance.now();
-                const delta = Math.min((time - prevTime) / 1000, 0.1);
-
-                velocity.x -= velocity.x * 10.0 * delta;
-                velocity.z -= velocity.z * 10.0 * delta;
-
-                direction.z = Number(moveForward) - Number(moveBackward);
-                direction.x = Number(moveRight) - Number(moveLeft);
-                direction.normalize();
-
-                // Speeds: Crouch = 140, Normal Walk = 260, Shift Sprint = 450 (Infinite sprint enabled)
-                let moveSpeed = 260.0;
-                if (isCrouching) moveSpeed = 140.0;
-                else if (isSprinting) moveSpeed = 450.0;
-
-                if (moveForward || moveBackward) velocity.z -= direction.z * moveSpeed * delta;
-                if (moveLeft || moveRight) velocity.x -= direction.x * moveSpeed * delta;
-
-                const playerPos = controls.getObject().position;
-
-                // Infinite chunk loader around player
-                const playerChunkX = Math.floor(playerPos.x / chunkSize);
-                const playerChunkZ = Math.floor(playerPos.z / chunkSize);
-                for (let x = playerChunkX - 2; x <= playerChunkX + 2; x++) {
-                    for (let z = playerChunkZ - 2; z <= playerChunkZ + 2; z++) {
-                        generateChunk(x, z);
-                    }
-                }
-
-                const deltaX = -velocity.x * delta;
-                const deltaZ = -velocity.z * delta;
-
-                controls.moveRight(deltaX);
-                if (checkCollision(playerPos)) {
-                    controls.moveRight(-deltaX);
-                }
-
-                controls.moveForward(deltaZ);
-                if (checkCollision(playerPos)) {
-                    controls.moveForward(-deltaZ);
-                }
-
-                // --- ENTITY AI: LINE OF SIGHT & CHASE LOGIC ---
-                const entityPos = entityGroup.position;
-                const distToPlayer = entityPos.distanceTo(playerPos);
-
-                // Check Line of Sight (Player must look towards entity or entity must be close enough & facing player line of sight)
-                const toEntity = new THREE.Vector3().subVectors(entityPos, playerPos).normalize();
-                const playerCamDir = new THREE.Vector3();
-                camera.getWorldDirection(playerCamDir);
-                const dotProd = playerCamDir.dot(toEntity);
-
-                // Entity chases if within range AND inside player camera's view frustum (dotProd > 0.2 means visible on screen) or if extremely close (< 35 units)
-                const canSeeEntity = (dotProd > 0.2 && distToPlayer < 90) || distToPlayer < 30;
-
-                if (canSeeEntity) {
-                    // Move towards player with terrifying speed
-                    const entitySpeed = 180.0 * delta;
-                    entityGroup.translateZ(entitySpeed);
-                    entityGroup.lookAt(playerPos.x, entityPos.y, playerPos.z);
-
-                    // Animation creepy jitter / stalk walk
-                    entityAnimationTimer += delta * 15;
-                    eLeftArm.rotation.x = Math.sin(entityAnimationTimer) * 0.8;
-                    eRightArm.rotation.x = -Math.sin(entityAnimationTimer) * 0.8;
-
-                    // Jump scare reset if it catches you
-                    if (distToPlayer < 4.5) {
-                        alert("It caught you.");
-                        playerPos.set(0, normalEyeHeight, 0);
-                        entityGroup.position.set(60, 0, -80);
-                    }
+                // Hovercraft physics & acceleration
+                if (moveForward) {
+                    speed += acceleration * delta;
+                } else if (moveBackward) {
+                    speed -= acceleration * 1.5 * delta;
                 } else {
-                    // Idle creep / wander slowly when out of sight / not looked at
-                    entityGroup.rotation.y += 0.01;
+                    speed -= speed * 2.0 * delta; // Natural friction
                 }
 
-                // Player Body & Head Bob Animations
-                let targetHeight = isCrouching ? crouchEyeHeight : normalEyeHeight;
-                const isMoving = moveForward || moveBackward || moveLeft || moveRight;
-                
-                if (isMoving) {
-                    headBobTimer += delta * (isCrouching ? 7 : (isSprinting ? 15 : 10));
-                    camera.position.y += (targetHeight + Math.sin(headBobTimer) * (isCrouching ? 0.08 : 0.15) - camera.position.y) * 0.1;
-                    
-                    leftLegPivot.rotation.x = Math.sin(headBobTimer) * 0.6;
-                    rightLegPivot.rotation.x = -Math.sin(headBobTimer) * 0.6;
-                    torso.position.y = -2.2 + Math.abs(Math.sin(headBobTimer)) * 0.1;
-                } else {
-                    camera.position.y += (targetHeight - camera.position.y) * 0.1;
-                    leftLegPivot.rotation.x *= 0.9;
-                    rightLegPivot.rotation.x *= 0.9;
-                    torso.position.y = -2.2;
-                }
+                speed = Math.max(-30, Math.min(speed, maxSpeed));
+                speedVal.innerText = Math.round(Math.abs(speed));
 
-                prevTime = time;
+                // Steering
+                if (moveLeft) hovercraftAngle += 1.5 * delta;
+                if (moveRight) hovercraftAngle -= 1.5 * delta;
+
+                // Move hovercraft forward based on angle
+                playerHovercraft.position.x += Math.sin(hovercraftAngle) * speed * delta;
+                playerHovercraft.position.z += Math.cos(hovercraftAngle) * speed * delta;
+                playerHovercraft.rotation.y = hovercraftAngle;
+
+                // Keep hovercraft bounded within the track walls (-28 to 28)
+                playerHovercraft.position.x = Math.max(-28, Math.min(28, playerHovercraft.position.x));
+
+                // Smooth third-person camera following hovercraft
+                const camDistX = playerHovercraft.position.x - Math.sin(hovercraftAngle) * 12;
+                const camDistZ = playerHovercraft.position.z - Math.cos(hovercraftAngle) * 12;
+                camera.position.x += (camDistX - camera.position.x) * 0.1;
+                camera.position.z += (camDistZ - camera.position.z) * 0.1;
+                camera.position.y = playerHovercraft.position.y + 5;
+                camera.lookAt(playerHovercraft.position.x, playerHovercraft.position.y + 2, playerHovercraft.position.z + 10);
+
+                // Send position to friend online
+                if (conn && conn.open) {
+                    conn.send({
+                        type: 'pos',
+                        x: playerHovercraft.position.x,
+                        y: playerHovercraft.position.y,
+                        z: playerHovercraft.position.z,
+                        ry: hovercraftAngle
+                    });
+                }
             }
 
+            prevTime = time;
             renderer.render(scene, camera);
         }
 
