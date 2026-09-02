@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Backrooms - Level 0 (Crouch Update)</title>
+    <title>The Backrooms - Level 0 (Stable Edition)</title>
     <style>
         body { margin: 0; overflow: hidden; background-color: #000; font-family: "Courier New", Courier, monospace; }
         #blocker {
@@ -29,15 +29,15 @@
         <div id="instructions">
             <h1 style="font-size: 40px;">THE BACKROOMS</h1>
             <p>Click to enter.</p>
-            <p><b>W, A, S, D</b> = Move | <b>Mouse</b> = Look Around<br><b>LEFT CTRL</b> = Crouch | <b>ESC</b> = Pause</p>
-            <p class="danger">Stay quiet. They listen to the hum.</p>
+            <p><b>W, A, S, D</b> = Move | <b>Mouse</b> = Look Around<br><b>C</b> = Crouch | <b>ESC</b> = Pause</p>
+            <p class="danger">The hum never stops.</p>
         </div>
     </div>
     
     <div id="crosshair"></div>
 
     <script>
-        // --- 1. HYPER-DETAILED PROCEDURAL TEXTURES ---
+        // --- 1. PROCEDURAL TEXTURES ---
         function createWallpaperTexture() {
             const canvas = document.createElement('canvas');
             canvas.width = 512; canvas.height = 512;
@@ -140,7 +140,7 @@
         renderer.setSize(window.innerWidth, window.innerHeight);
         document.body.appendChild(renderer.domElement);
 
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.28);
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.3);
         scene.add(ambientLight);
 
         // --- 3. ENVIRONMENT BUILD ---
@@ -160,7 +160,6 @@
         scene.add(ceiling);
 
         const objects = [];
-        const lights = [];
 
         const wallGeo = new THREE.BoxGeometry(20, ceilingHeight, 2);
         const lightHousingGeo = new THREE.BoxGeometry(8, 0.6, 4);
@@ -185,6 +184,7 @@
             }
         }
 
+        // Clean, stable lights (no tracking arrays for flickering)
         for (let x = -380; x <= 380; x += 40) {
             for (let z = -380; z <= 380; z += 40) {
                 if (!occupiedGrid.has(`${x},${z}`)) {
@@ -196,15 +196,14 @@
                     tube.position.set(x, ceilingHeight - 0.5, z);
                     scene.add(tube);
 
-                    const pLight = new THREE.PointLight(0xfffae0, 0.75, 40);
+                    const pLight = new THREE.PointLight(0xfffae0, 0.7, 40);
                     pLight.position.set(x, ceilingHeight - 2, z);
                     scene.add(pLight);
-                    lights.push(pLight);
                 }
             }
         }
 
-        // --- 4. CONTROLS, CROUCH & COLLISION ---
+        // --- 4. CONTROLS, C-KEY CROUCH & COLLISION ---
         const controls = new THREE.PointerLockControls(camera, document.body);
         const blocker = document.getElementById('blocker');
         const instructions = document.getElementById('instructions');
@@ -225,14 +224,14 @@
             if (e.code === 'KeyS') moveBackward = true;
             if (e.code === 'KeyA') moveLeft = true;
             if (e.code === 'KeyD') moveRight = true;
-            if (e.code === 'ControlLeft') isCrouching = true;
+            if (e.code === 'KeyC') isCrouching = true; // Changed to C key
         });
         document.addEventListener('keyup', (e) => {
             if (e.code === 'KeyW') moveForward = false;
             if (e.code === 'KeyS') moveBackward = false;
             if (e.code === 'KeyA') moveLeft = false;
             if (e.code === 'KeyD') moveRight = false;
-            if (e.code === 'ControlLeft') isCrouching = false;
+            if (e.code === 'KeyC') isCrouching = false; // Changed to C key
         });
 
         function checkCollision(pos) {
@@ -264,7 +263,6 @@
                 direction.x = Number(moveRight) - Number(moveLeft);
                 direction.normalize();
 
-                // Slow down movement speed if crouching
                 const moveSpeed = isCrouching ? 140.0 : 280.0;
 
                 if (moveForward || moveBackward) velocity.z -= direction.z * moveSpeed * delta;
@@ -284,7 +282,6 @@
                     controls.moveForward(velocity.z * delta);
                 }
 
-                // Smooth camera transition between standing and crouching height
                 let targetHeight = isCrouching ? crouchEyeHeight : normalEyeHeight;
                 const isMoving = moveForward || moveBackward || moveLeft || moveRight;
                 
@@ -293,13 +290,6 @@
                     camera.position.y += (targetHeight + Math.sin(headBobTimer) * (isCrouching ? 0.08 : 0.15) - camera.position.y) * 0.1;
                 } else {
                     camera.position.y += (targetHeight - camera.position.y) * 0.1;
-                }
-
-                // Balanced, natural fluorescent tube flicker (rare, subtle, realistic)
-                if (Math.random() < 0.0015 && lights.length > 0) {
-                    const targetLight = lights[Math.floor(Math.random() * lights.length)];
-                    targetLight.intensity = 0.1;
-                    setTimeout(() => { targetLight.intensity = 0.75; }, 100 + Math.random() * 200);
                 }
 
                 prevTime = time;
