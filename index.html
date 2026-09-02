@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Backrooms - Collision Update</title>
+    <title>The Backrooms - High Detail Edition</title>
     <style>
         body { margin: 0; overflow: hidden; background-color: #000; font-family: "Courier New", Courier, monospace; }
         #blocker {
             position: absolute; width: 100%; height: 100%;
-            background-color: rgba(0,0,0,0.8);
+            background-color: rgba(0,0,0,0.85);
             display: flex; flex-direction: column; justify-content: center; align-items: center;
             color: #d4b522; text-align: center; cursor: pointer; z-index: 10;
         }
@@ -16,7 +16,7 @@
         .danger { color: #ff4444; font-weight: bold; }
         #crosshair {
             position: absolute; top: 50%; left: 50%; width: 6px; height: 6px;
-            background-color: rgba(255, 255, 255, 0.5); border-radius: 50%;
+            background-color: rgba(255, 255, 255, 0.4); border-radius: 50%;
             transform: translate(-50%, -50%); pointer-events: none; z-index: 5;
         }
     </style>
@@ -30,61 +30,154 @@
             <h1 style="font-size: 40px;">THE BACKROOMS</h1>
             <p>Click anywhere to enter.</p>
             <p><b>W, A, S, D</b> = Move<br><b>Mouse</b> = Look Around<br><b>ESC</b> = Pause</p>
-            <p class="danger">Watch your step. The walls are solid now.</p>
+            <p class="danger">Avoid the hum-buzzing.</p>
         </div>
     </div>
     
     <div id="crosshair"></div>
 
     <script>
-        // --- 1. SETUP ---
+        // --- 1. PROCEDURAL TEXTURE GENERATORS ---
+        function createWallpaperTexture() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 512; canvas.height = 512;
+            const ctx = canvas.getContext('2d');
+            
+            // Base yellowish tan
+            ctx.fillStyle = '#bfa143';
+            ctx.fillRect(0, 0, 512, 512);
+
+            // Wallpaper chevron pattern
+            ctx.strokeStyle = '#9e812d';
+            ctx.lineWidth = 4;
+            for (let y = 0; y < 512; y += 32) {
+                for (let x = 0; x < 512; x += 32) {
+                    ctx.beginPath();
+                    ctx.moveTo(x, y + 16);
+                    ctx.lineTo(x + 16, y);
+                    ctx.lineTo(x + 32, y + 16);
+                    ctx.stroke();
+                }
+            }
+            
+            // Subtle grime noise
+            ctx.fillStyle = 'rgba(50, 40, 0, 0.05)';
+            for (let i = 0; i < 5000; i++) {
+                ctx.fillRect(Math.random() * 512, Math.random() * 512, 4, 4);
+            }
+
+            const texture = new THREE.CanvasTexture(canvas);
+            texture.wrapS = THREE.RepeatWrapping;
+            texture.wrapT = THREE.RepeatWrapping;
+            texture.repeat.set(2, 4);
+            return texture;
+        }
+
+        function createCarpetTexture() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 256; canvas.height = 256;
+            const ctx = canvas.getContext('2d');
+
+            ctx.fillStyle = '#524922';
+            ctx.fillRect(0, 0, 256, 256);
+
+            // Damp stain spots
+            ctx.fillStyle = 'rgba(20, 15, 0, 0.2)';
+            for (let i = 0; i < 2000; i++) {
+                ctx.fillRect(Math.random() * 256, Math.random() * 256, 3, 3);
+            }
+
+            const texture = new THREE.CanvasTexture(canvas);
+            texture.wrapS = THREE.RepeatWrapping;
+            texture.wrapT = THREE.RepeatWrapping;
+            texture.repeat.set(50, 50);
+            return texture;
+        }
+
+        function createCeilingTexture() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 256; canvas.height = 256;
+            const ctx = canvas.getContext('2d');
+
+            ctx.fillStyle = '#c9c7ba';
+            ctx.fillRect(0, 0, 256, 256);
+            ctx.strokeStyle = '#7a796e';
+            ctx.lineWidth = 4;
+            ctx.strokeRect(0, 0, 256, 256);
+
+            const texture = new THREE.CanvasTexture(canvas);
+            texture.wrapS = THREE.RepeatWrapping;
+            texture.wrapT = THREE.RepeatWrapping;
+            texture.repeat.set(50, 50);
+            return texture;
+        }
+
+        // --- 2. THREE.JS SCENE SETUP ---
         const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x9a8511);
-        scene.fog = new THREE.Fog(0x9a8511, 0, 60);
+        scene.background = new THREE.Color(0xa68f2d);
+        // Distance fog: increased far value to 200 for high visibility distance
+        scene.fog = new THREE.Fog(0xa68f2d, 10, 200);
 
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 1, 1000);
-        camera.position.y = 12; // Adjusted eye level
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.5, 1000);
+        camera.position.y = 10;
 
-        const renderer = new THREE.WebGLRenderer({ antialias: false });
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         document.body.appendChild(renderer.domElement);
 
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.35);
         scene.add(ambientLight);
 
-        // --- 2. BUILD THE ENVIRONMENT ---
-        const floorMat = new THREE.MeshLambertMaterial({ color: 0x5a5022 }); 
-        const ceilingMat = new THREE.MeshLambertMaterial({ color: 0xd4d4cc });
-        const wallMat = new THREE.MeshLambertMaterial({ color: 0xbdab40 });
+        // --- 3. ENVIRONMENT & LIGHT FIXTURES ---
+        const wallMat = new THREE.MeshLambertMaterial({ map: createWallpaperTexture() });
+        const floorMat = new THREE.MeshLambertMaterial({ map: createCarpetTexture() });
+        const ceilingMat = new THREE.MeshLambertMaterial({ map: createCeilingTexture() });
 
-        const floorGeo = new THREE.PlaneGeometry(2000, 2000);
+        // Floor & Ceiling
+        const floorGeo = new THREE.PlaneGeometry(1000, 1000);
         const floor = new THREE.Mesh(floorGeo, floorMat);
         floor.rotation.x = -Math.PI / 2;
         scene.add(floor);
 
         const ceiling = new THREE.Mesh(floorGeo, ceilingMat);
         ceiling.rotation.x = Math.PI / 2;
-        ceiling.position.y = 40; // Raised the ceiling much higher!
+        ceiling.position.y = 30;
         scene.add(ceiling);
 
-        // Array to hold our walls for collision detection
-        const objects = []; 
+        const objects = [];
+        const lights = [];
 
-        // Make the walls much taller and bigger
-        const wallGeo = new THREE.BoxGeometry(30, 40, 2); 
-        for (let i = 0; i < 400; i++) {
-            const wall = new THREE.Mesh(wallGeo, wallMat);
-            wall.position.x = (Math.random() - 0.5) * 800;
-            wall.position.z = (Math.random() - 0.5) * 800;
-            wall.position.y = 20; // Half of height to sit on floor
-            
-            if (Math.random() > 0.5) wall.rotation.y = Math.PI / 2;
-            
-            scene.add(wall);
-            objects.push(wall); // Add to collision array
+        // Build Walls and Ceiling Lights Grid
+        const wallGeo = new THREE.BoxGeometry(20, 30, 2);
+        const lightGeo = new THREE.BoxGeometry(8, 0.5, 4);
+        const lightMat = new THREE.MeshBasicMaterial({ color: 0xfffee0 });
+
+        for (let x = -400; x <= 400; x += 40) {
+            for (let z = -400; z <= 400; z += 40) {
+                // Add ceiling lights periodically
+                if (Math.random() < 0.25) {
+                    const lightMesh = new THREE.Mesh(lightGeo, lightMat);
+                    lightMesh.position.set(x, 29.5, z);
+                    scene.add(lightMesh);
+
+                    const pLight = new THREE.PointLight(0xfffae0, 0.7, 45);
+                    pLight.position.set(x, 27, z);
+                    scene.add(pLight);
+                    lights.push(pLight);
+                }
+
+                // Scatter Maze Walls
+                if (Math.random() < 0.4 && (Math.abs(x) > 30 || Math.abs(z) > 30)) {
+                    const wall = new THREE.Mesh(wallGeo, wallMat);
+                    wall.position.set(x, 15, z);
+                    if (Math.random() > 0.5) wall.rotation.y = Math.PI / 2;
+                    scene.add(wall);
+                    objects.push(wall);
+                }
+            }
         }
 
-        // --- 3. CONTROLS & COLLISION SETUP ---
+        // --- 4. CONTROLS & SMOOTH SLIDING COLLISION ---
         const controls = new THREE.PointerLockControls(camera, document.body);
         const blocker = document.getElementById('blocker');
         const instructions = document.getElementById('instructions');
@@ -99,31 +192,24 @@
         const direction = new THREE.Vector3();
         let prevTime = performance.now();
 
-        // Raycaster acts like a laser pointer to detect walls in front of us
-        const raycaster = new THREE.Raycaster(new THREE.Vector3(), new THREE.Vector3(), 0, 5);
-
-        document.addEventListener('keydown', (event) => {
-            switch (event.code) {
-                case 'KeyW': moveForward = true; break;
-                case 'KeyA': moveLeft = true; break;
-                case 'KeyS': moveBackward = true; break;
-                case 'KeyD': moveRight = true; break;
-            }
+        document.addEventListener('keydown', (e) => {
+            if (e.code === 'KeyW') moveForward = true;
+            if (e.code === 'KeyS') moveBackward = true;
+            if (e.code === 'KeyA') moveLeft = true;
+            if (e.code === 'KeyD') moveRight = true;
         });
-        document.addEventListener('keyup', (event) => {
-            switch (event.code) {
-                case 'KeyW': moveForward = false; break;
-                case 'KeyA': moveLeft = false; break;
-                case 'KeyS': moveBackward = false; break;
-                case 'KeyD': moveRight = false; break;
-            }
+        document.addEventListener('keyup', (e) => {
+            if (e.code === 'KeyW') moveForward = false;
+            if (e.code === 'KeyS') moveBackward = false;
+            if (e.code === 'KeyA') moveLeft = false;
+            if (e.code === 'KeyD') moveRight = false;
         });
 
-        // --- 4. GAME LOOP ---
+        // --- 5. MAIN RENDER LOOP ---
         function animate() {
             requestAnimationFrame(animate);
 
-            if (controls.isLocked === true) {
+            if (controls.isLocked) {
                 const time = performance.now();
                 const delta = (time - prevTime) / 1000;
 
@@ -134,34 +220,42 @@
                 direction.x = Number(moveRight) - Number(moveLeft);
                 direction.normalize();
 
-                // COLLISION DETECTION LOGIC
-                const controlObj = controls.getObject();
-                raycaster.ray.origin.copy(controlObj.position);
-                
-                // Get the direction the camera is facing
-                const camDirection = new THREE.Vector3();
-                controls.getDirection(camDirection);
-                
-                // Only check collision if we are moving forward
-                if (moveForward) {
-                    camDirection.y = 0; // Don't check up/down
-                    raycaster.ray.direction.copy(camDirection);
-                    const intersections = raycaster.intersectObjects(objects);
-                    
-                    // If we hit a wall within 5 units, stop forward movement
-                    if (intersections.length > 0) {
-                        velocity.z = Math.max(0, velocity.z); 
-                    }
-                }
+                if (moveForward || moveBackward) velocity.z -= direction.z * 350.0 * delta;
+                if (moveLeft || moveRight) velocity.x -= direction.x * 350.0 * delta;
 
-                if (moveForward || moveBackward) velocity.z -= direction.z * 400.0 * delta;
-                if (moveLeft || moveRight) velocity.x -= direction.x * 400.0 * delta;
+                // Wall Collision handling with radius checking
+                const playerPos = controls.getObject().position;
+                const oldX = playerPos.x;
+                const oldZ = playerPos.z;
 
                 controls.moveRight(-velocity.x * delta);
                 controls.moveForward(-velocity.z * delta);
 
+                // Simple Bounding Box check around player (Radius = 3 units)
+                const playerRadius = 3;
+                for (let i = 0; i < objects.length; i++) {
+                    const wallBox = new THREE.Box3().setFromObject(objects[i]);
+                    const playerBox = new THREE.Box3(
+                        new THREE.Vector3(playerPos.x - playerRadius, 0, playerPos.z - playerRadius),
+                        new THREE.Vector3(playerPos.x + playerRadius, 30, playerPos.z + playerRadius)
+                    );
+
+                    if (wallBox.intersectsBox(playerBox)) {
+                        playerPos.x = oldX;
+                        playerPos.z = oldZ;
+                        break;
+                    }
+                }
+
+                // Random Light Flicker Effect
+                if (Math.random() < 0.03 && lights.length > 0) {
+                    const randomLight = lights[Math.floor(Math.random() * lights.length)];
+                    randomLight.intensity = Math.random() < 0.5 ? 0.1 : 0.7;
+                }
+
                 prevTime = time;
             }
+
             renderer.render(scene, camera);
         }
 
