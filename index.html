@@ -3,32 +3,42 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Neon Velocity - Singleplayer, AI Opponents & Online Multiplayer</title>
+    <title>BlockVerse - Ultimate Plot Sandbox & Character Creator</title>
     <style>
-        body { margin: 0; overflow: hidden; background-color: #03030c; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; user-select: none; }
+        body { margin: 0; overflow: hidden; background-color: #87CEEB; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; user-select: none; }
         #menu {
             position: absolute; width: 100%; height: 100%;
-            background: linear-gradient(135deg, #090314, #1a0b36, #05020c);
+            background: linear-gradient(135deg, #1e3c72, #2a5298);
             display: flex; flex-direction: column; justify-content: center; align-items: center;
-            color: #fff; z-index: 10; text-align: center;
+            color: #fff; z-index: 20; text-align: center;
         }
-        h1 { font-size: 55px; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 6px; color: #00f0ff; text-shadow: 0 0 25px rgba(0,240,255,0.6); }
-        p { color: #a19fc8; font-size: 18px; margin-bottom: 30px; }
-        .btn-group { display: flex; flex-direction: column; gap: 15px; align-items: center; }
+        h1 { font-size: 55px; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 4px; color: #ffeb3b; text-shadow: 0 4px 10px rgba(0,0,0,0.5); }
+        p { color: #e0e0e0; font-size: 18px; margin-bottom: 25px; }
         .btn {
-            background: linear-gradient(45deg, #00f0ff, #7000ff); color: #fff; border: none; padding: 15px 40px;
-            font-size: 17px; font-weight: bold; border-radius: 30px; cursor: pointer;
-            transition: 0.3s; box-shadow: 0 0 20px rgba(0,240,255,0.4); text-transform: uppercase; letter-spacing: 2px; width: 280px;
+            background: #ff5722; color: #fff; border: none; padding: 15px 40px;
+            font-size: 18px; font-weight: bold; border-radius: 30px; cursor: pointer;
+            transition: 0.2s; box-shadow: 0 5px 15px rgba(255,87,34,0.4); text-transform: uppercase; margin: 8px;
         }
-        .btn:hover { box-shadow: 0 0 30px #00f0ff, 0 0 50px #7000ff; transform: scale(1.04); }
+        .btn:hover { background: #ff7043; transform: scale(1.05); }
         #hud {
-            position: absolute; top: 25px; left: 25px; color: #fff; font-size: 22px;
-            font-weight: bold; pointer-events: none; z-index: 5; text-shadow: 0 0 8px rgba(0,240,255,0.8);
-            background: rgba(10, 5, 25, 0.6); padding: 12px 25px; border-radius: 12px; border: 1px solid rgba(0,240,255,0.3);
+            position: absolute; top: 20px; left: 20px; color: #fff; font-size: 18px;
+            font-weight: bold; pointer-events: none; z-index: 10; text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+            background: rgba(0,0,0,0.4); padding: 12px 20px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.2);
         }
-        #controls-hint {
-            position: absolute; bottom: 25px; left: 50%; transform: translateX(-50%);
-            color: rgba(255,255,255,0.6); font-size: 15px; pointer-events: none; z-index: 5; text-align: center;
+        #toolbar {
+            position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
+            display: flex; gap: 10px; background: rgba(0,0,0,0.6); padding: 12px 20px;
+            border-radius: 16px; z-index: 10; backdrop-filter: blur(5px);
+        }
+        .tool-btn {
+            background: #333; color: #fff; border: 2px solid #555; padding: 10px 18px;
+            border-radius: 10px; cursor: pointer; font-weight: bold; font-size: 14px; transition: 0.2s;
+        }
+        .tool-btn.active { background: #ff5722; border-color: #ffab91; box-shadow: 0 0 10px #ff5722; }
+        #crosshair {
+            position: absolute; top: 50%; left: 50%; width: 8px; height: 8px;
+            background-color: rgba(255, 255, 255, 0.8); border: 2px solid #000; border-radius: 50%;
+            transform: translate(-50%, -50%); pointer-events: none; z-index: 10;
         }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
@@ -38,58 +48,65 @@
 <body>
 
     <div id="menu">
-        <h1>Neon Velocity</h1>
-        <p>Futuristic Hovercraft Racing Circuit</p>
-        <div class="btn-group">
-            <button class="btn" id="aiBtn">Race vs Smart AI</button>
-            <button class="btn" id="hostBtn" style="background: linear-gradient(45deg, #00ff7f, #00f0ff);">Host Online Room</button>
-            <button class="btn" id="joinBtn" style="background: linear-gradient(45deg, #ff007f, #ffaa00);">Join Friend Code</button>
+        <h1>BlockVerse</h1>
+        <p>Build your dream plot, visit friends via Fast Pads, and customize your character!</p>
+        <div>
+            <button class="btn" id="startBtn">Enter Sandbox World</button>
+            <button class="btn" id="hostOnlineBtn" style="background:#00bcd4;">Host Online Room</button>
+            <button class="btn" id="joinOnlineBtn" style="background:#e91e63;">Join Friend Code</button>
         </div>
-        <div id="roomInfo" style="margin-top: 20px; font-size: 16px; color: #00f0ff; max-width: 500px; line-height: 1.5;"></div>
+        <div id="roomInfo" style="margin-top: 15px; font-size: 16px; color: #ffeb3b;"></div>
     </div>
 
-    <div id="hud">Speed: <span id="speedVal">0</span> KM/H</div>
-    <div id="controls-hint"><b>W, A, S, D</b> = Steer & Drive Hovercraft | <b>Mouse</b> = Look Around | <b>ESC</b> = Pause</div>
+    <div id="hud">
+        Tool: <span id="currentToolName" style="color:#ffeb3b;">Cube Block</span><br>
+        Color: <span id="currentColorName" style="color:#ff5722;">Orange</span><br>
+        <span style="font-size:13px; color:#ccc;">Press 1-4 to switch shapes | B to cycle color | E to open/close menu</span>
+    </div>
+
+    <div id="toolbar">
+        <button class="tool-btn active" onclick="setShape('cube')">1. Cube</button>
+        <button class="tool-btn" onclick="setShape('sphere')">2. Sphere</button>
+        <button class="tool-btn" onclick="setShape('ramp')">3. Ramp</button>
+        <button class="tool-btn" onclick="setShape('delete')">4. Delete Tool</button>
+    </div>
+
+    <div id="crosshair"></div>
 
     <script>
-        // --- GAME MODES & MULTIPLAYER STATE ---
-        let gameMode = ''; // 'ai' or 'online'
+        // --- MULTIPLAYER & GAME SETUP ---
         let peer, conn;
         let isHost = false;
         let myId = '';
-        let remoteHovercraft;
-        let aiHovercraft;
-        let aiZ = 20;
-        let aiSpeed = 75;
+        const remotePlayers = {};
+        let isOnline = false;
 
         const menu = document.getElementById('menu');
         const roomInfo = document.getElementById('roomInfo');
-        const speedVal = document.getElementById('speedVal');
 
-        document.getElementById('aiBtn').addEventListener('click', () => {
-            gameMode = 'ai';
+        document.getElementById('startBtn').addEventListener('click', () => {
             menu.style.display = 'none';
             controls.lock();
-            aiHovercraft.visible = true;
         });
 
-        document.getElementById('hostBtn').addEventListener('click', () => {
-            gameMode = 'online';
+        document.getElementById('hostOnlineBtn').addEventListener('click', () => {
+            isOnline = true;
             peer = new Peer();
             peer.on('open', (id) => {
                 myId = id;
                 isHost = true;
-                roomInfo.innerHTML = `Room Code: <b style="color:#fff;font-size:20px;">${id}</b><br>Share this code with your friend! Waiting...`;
+                roomInfo.innerHTML = `Room Code: <b>${id}</b><br>Give this to your friend! Waiting...`;
             });
             peer.on('connection', (connection) => {
                 conn = connection;
                 setupConnection();
-                startOnlineGame();
+                menu.style.display = 'none';
+                controls.lock();
             });
         });
 
-        document.getElementById('joinBtn').addEventListener('click', () => {
-            gameMode = 'online';
+        document.getElementById('joinOnlineBtn').addEventListener('click', () => {
+            isOnline = true;
             const friendId = prompt("Enter your friend's Room Code:");
             if (!friendId) return;
             peer = new Peer();
@@ -98,129 +115,219 @@
                 isHost = false;
                 conn = peer.connect(friendId);
                 setupConnection();
-                startOnlineGame();
+                menu.style.display = 'none';
+                controls.lock();
             });
         });
 
         function setupConnection() {
-            conn.on('open', () => {
-                roomInfo.innerHTML = "Connected! Launching race...";
-                setTimeout(() => {
-                    menu.style.display = 'none';
-                    controls.lock();
-                    remoteHovercraft.visible = true;
-                }, 1000);
-            });
+            conn.on('open', () => { roomInfo.innerHTML = "Connected to friend!"; });
             conn.on('data', (data) => {
-                if (data.type === 'pos' && remoteHovercraft) {
-                    remoteHovercraft.position.set(data.x, data.y, data.z);
-                    remoteHovercraft.rotation.y = data.ry;
+                if (data.type === 'pos') {
+                    updateRemotePlayer(data);
+                } else if (data.type === 'build') {
+                    spawnPlacedObject(data.x, data.y, data.z, data.shape, data.color, false);
                 }
             });
         }
 
-        function startOnlineGame() {
-            setTimeout(() => {
-                if (menu.style.display !== 'none') {
-                    menu.style.display = 'none';
-                    controls.lock();
-                    remoteHovercraft.visible = true;
-                }
-            }, 1500);
-        }
-
-        // --- 3D GRAPHICS & SCENE SETUP ---
+        // --- 3D SCENE SETUP ---
         const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x040412);
-        scene.fog = new THREE.FogExp2(0x040412, 0.012);
+        scene.background = new THREE.Color(0x87CEEB); // Sky blue
+        scene.fog = new THREE.FogExp2(0x87CEEB, 0.008);
 
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.5, 1000);
-        camera.position.set(0, 6, -12);
+        camera.position.set(0, 5, 10);
 
-        const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.shadowMap.enabled = true;
         document.body.appendChild(renderer.domElement);
 
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
         scene.add(ambientLight);
 
-        const dirLight = new THREE.DirectionalLight(0x00f0ff, 1.2);
-        dirLight.position.set(50, 80, 50);
-        scene.add(dirLight);
+        const sunLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        sunLight.position.set(50, 100, 50);
+        sunLight.castShadow = true;
+        scene.add(sunLight);
 
-        // --- TRACK & ENVIRONMENT ---
-        const trackGroup = new THREE.Group();
-        scene.add(trackGroup);
+        // --- WORLD GENERATION: 6 LARGE PLOTS & FAST PADS ---
+        const plotsGroup = new THREE.Group();
+        scene.add(plotsGroup);
 
-        const floorMat = new THREE.MeshStandardMaterial({ color: 0x0c0b1c, roughness: 0.3, metalness: 0.8 });
-        const trackRoad = new THREE.Mesh(new THREE.PlaneGeometry(60, 1500), floorMat);
-        trackRoad.rotation.x = -Math.PI / 2;
-        trackRoad.position.set(0, 0, 700);
-        trackGroup.add(trackRoad);
+        const plotSize = 70;
+        const plotSpacing = 90;
+        const plotPositions = [
+            { x: 0, z: 0, name: "Your Plot" },
+            { x: plotSpacing, z: 0, name: "Plot 2" },
+            { x: -plotSpacing, z: 0, name: "Plot 3" },
+            { x: 0, z: plotSpacing, name: "Plot 4" },
+            { x: plotSpacing, z: plotSpacing, name: "Plot 5" },
+            { x: -plotSpacing, z: plotSpacing, name: "Plot 6" },
+        ];
 
-        const barrierMat = new THREE.MeshBasicMaterial({ color: 0x00f0ff });
-        const archMat = new THREE.MeshBasicMaterial({ color: 0xff007f });
+        const placedObjects = [];
+        const fastPads = [];
 
-        for (let z = 0; z < 1400; z += 50) {
-            const leftBar = new THREE.Mesh(new THREE.BoxGeometry(2, 4, 45), barrierMat);
-            leftBar.position.set(-31, 2, z);
-            trackGroup.add(leftBar);
+        plotPositions.forEach((p, idx) => {
+            // Plot base ground
+            const baseGeo = new THREE.BoxGeometry(plotSize, 1, plotSize);
+            const baseMat = new THREE.MeshStandardMaterial({ color: idx === 0 ? 0x76c752 : 0x8bc34a, roughness: 0.7 });
+            const plotBase = new THREE.Mesh(baseGeo, baseMat);
+            plotBase.position.set(p.x, -0.5, p.z);
+            plotsGroup.add(plotBase);
 
-            const rightBar = new THREE.Mesh(new THREE.BoxGeometry(2, 4, 45), barrierMat);
-            rightBar.position.set(31, 2, z);
-            trackGroup.add(rightBar);
+            // Border fence
+            const borderMat = new THREE.MeshStandardMaterial({ color: 0x555 });
+            const fence = new THREE.Mesh(new THREE.BoxGeometry(plotSize, 0.5, 1), borderMat);
+            fence.position.set(p.x, 0.2, p.z - plotSize/2);
+            plotsGroup.add(fence);
 
-            const archTop = new THREE.Mesh(new THREE.BoxGeometry(64, 1.5, 3), archMat);
-            archTop.position.set(0, 18, z);
-            trackGroup.add(archTop);
+            // Fast Pad in the center of each plot to teleport around quickly
+            const padGeo = new THREE.CylinderGeometry(3, 3, 0.3, 32);
+            const padMat = new THREE.MeshStandardMaterial({ color: 0x00bcd4, emissive: 0x00bcd4, emissiveIntensity: 0.6 });
+            const fastPad = new THREE.Mesh(padGeo, padMat);
+            fastPad.position.set(p.x, 0.1, p.z);
+            fastPad.userData = { targetX: p.x, targetZ: p.z + 10 };
+            plotsGroup.add(fastPad);
+            fastPads.push(fastPad);
+        });
+
+        // --- PLAYER CHARACTER (Roblox-style Blocky Avatar with Animations) ---
+        const playerGroup = new THREE.Group();
+        
+        const skinMat = new THREE.MeshStandardMaterial({ color: 0xffcc99 });
+        const shirtMat = new THREE.MeshStandardMaterial({ color: 0x3f51b5 }); // Blue torso
+        const pantsMat = new THREE.MeshStandardMaterial({ color: 0x212121 }); // Dark pants
+
+        // Torso
+        const torso = new THREE.Mesh(new THREE.BoxGeometry(1.2, 1.8, 0.6), shirtMat);
+        torso.position.y = 2.5;
+        playerGroup.add(torso);
+
+        // Head
+        const head = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), skinMat);
+        head.position.y = 3.8;
+        playerGroup.add(head);
+
+        // Limbs for walking animation
+        const limbGeo = new THREE.BoxGeometry(0.5, 1.8, 0.5);
+        const leftArm = new THREE.Mesh(limbGeo, shirtMat);
+        leftArm.position.set(-0.9, 2.5, 0);
+        playerGroup.add(leftArm);
+
+        const rightArm = new THREE.Mesh(limbGeo, shirtMat);
+        rightArm.position.set(0.9, 2.5, 0);
+        playerGroup.add(rightArm);
+
+        const leftLeg = new THREE.Mesh(limbGeo, pantsMat);
+        leftLeg.position.set(-0.35, 1.0, 0);
+        playerGroup.add(leftLeg);
+
+        const rightLeg = new THREE.Mesh(limbGeo, pantsMat);
+        rightLeg.position.set(0.35, 1.0, 0);
+        playerGroup.add(rightLeg);
+
+        // Attach character model to camera view or track separately in third/first person
+        scene.add(playerGroup);
+
+        // --- REMOTE FRIEND AVATAR ---
+        const remotePlayer = playerGroup.clone();
+        remotePlayer.visible = false;
+        scene.add(remotePlayer);
+
+        function updateRemotePlayer(data) {
+            remotePlayer.visible = true;
+            remotePlayer.position.set(data.x, data.y, data.z);
+            remotePlayer.rotation.y = data.ry;
         }
 
-        // --- PLAYER HOVERCRAFT ---
-        const playerHovercraft = new THREE.Group();
-        const hullMat = new THREE.MeshStandardMaterial({ color: 0x00f0ff, metalness: 0.9, roughness: 0.2 });
-        const cockpitMat = new THREE.MeshStandardMaterial({ color: 0xff007f, emissive: 0xff007f, emissiveIntensity: 0.5 });
+        // --- BUILDING & PLACING SYSTEM ---
+        let currentShape = 'cube'; // cube, sphere, ramp, delete
+        let currentColorIndex = 0;
+        const colors = [0xff5722, 0x4caf50, 0x2196f3, 0xffeb3b, 0x9c27b0, 0xffffff, 0x333333];
+        const colorNames = ['Orange', 'Green', 'Blue', 'Yellow', 'Purple', 'White', 'Dark'];
 
-        const hull = new THREE.Mesh(new THREE.BoxGeometry(3.5, 1.2, 7), hullMat);
-        hull.position.y = 1.5;
-        playerHovercraft.add(hull);
-
-        const cockpit = new THREE.Mesh(new THREE.BoxGeometry(2, 1, 3), cockpitMat);
-        cockpit.position.set(0, 2, 0.5);
-        playerHovercraft.add(cockpit);
-        scene.add(playerHovercraft);
-
-        // --- REMOTE FRIEND HOVERCRAFT ---
-        remoteHovercraft = new THREE.Group();
-        const rHull = new THREE.Mesh(new THREE.BoxGeometry(3.5, 1.2, 7), new THREE.MeshStandardMaterial({ color: 0xffaa00, metalness: 0.9 }));
-        rHull.position.y = 1.5;
-        remoteHovercraft.add(rHull);
-        remoteHovercraft.visible = false;
-        scene.add(remoteHovercraft);
-
-        // --- SMART AI OPPONENT HOVERCRAFT ---
-        aiHovercraft = new THREE.Group();
-        const aiHull = new THREE.Mesh(new THREE.BoxGeometry(3.5, 1.2, 7), new THREE.MeshStandardMaterial({ color: 0xff0055, metalness: 0.9 }));
-        aiHull.position.y = 1.5;
-        aiHovercraft.add(aiHull);
-        aiHovercraft.visible = false;
-        scene.add(aiHovercraft);
-        aiHovercraft.position.set(8, 0, 30);
-
-        // --- CONTROLS & PHYSICS ---
-        const controls = new THREE.PointerLockControls(camera, document.body);
-        let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false;
-        let speed = 0;
-        let maxSpeed = 130.0;
-        let acceleration = 55.0;
-        let steering = 0;
-        let hovercraftAngle = 0;
+        function setShape(shape) {
+            currentShape = shape;
+            document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
+            if(shape === 'cube') document.querySelectorAll('.tool-btn')[0].classList.add('active');
+            if(shape === 'sphere') document.querySelectorAll('.tool-btn')[1].classList.add('active');
+            if(shape === 'ramp') document.querySelectorAll('.tool-btn')[2].classList.add('active');
+            if(shape === 'delete') document.querySelectorAll('.tool-btn')[3].classList.add('active');
+            document.getElementById('currentToolName').innerText = shape.toUpperCase();
+        }
 
         document.addEventListener('keydown', (e) => {
+            if (e.code === 'Digit1') setShape('cube');
+            if (e.code === 'Digit2') setShape('sphere');
+            if (e.code === 'Digit3') setShape('ramp');
+            if (e.code === 'Digit4') setShape('delete');
+            if (e.code === 'KeyB') {
+                currentColorIndex = (currentColorIndex + 1) % colors.length;
+                document.getElementById('currentColorName').innerText = colorNames[currentColorIndex];
+            }
+        });
+
+        // Click to place or delete objects
+        window.addEventListener('mousedown', () => {
+            if (!controls.isLocked) return;
+
+            const raycaster = new THREE.Raycaster();
+            raycaster.setFromCamera(new THREE.Vector2(0, 0), camera);
+            const intersects = raycaster.intersectObjects(scene.children, true);
+
+            if (intersects.length > 0) {
+                const hit = intersects[0];
+
+                if (currentShape === 'delete') {
+                    // Remove object if clicked
+                    if (hit.object && hit.object !== plotBase && hit.object !== floor && !fastPads.includes(hit.object)) {
+                        scene.remove(hit.object);
+                        const idx = placedObjects.indexOf(hit.object);
+                        if (idx > -1) placedObjects.splice(idx, 1);
+                    }
+                } else {
+                    // Place new block/shape with building animation effect
+                    const pos = hit.point.clone().add(hit.face.normal.clone().multiplyScalar(1.5));
+                    spawnPlacedObject(pos.x, Math.max(0, pos.y), pos.z, currentShape, colors[currentColorIndex], true);
+                }
+            }
+        });
+
+        function spawnPlacedObject(x, y, z, shape, colorHex, sendNetwork) {
+            let geo;
+            if (shape === 'cube') geo = new THREE.BoxGeometry(2, 2, 2);
+            else if (shape === 'sphere') geo = new THREE.SphereGeometry(1.2, 16, 16);
+            else if (shape === 'ramp') geo = new THREE.BoxGeometry(2, 2, 2); // Simplified ramp block
+
+            const mat = new THREE.MeshStandardMaterial({ color: colorHex, roughness: 0.3 });
+            const obj = new THREE.Mesh(geo, mat);
+            obj.position.set(Math.round(x), Math.round(y), Math.round(z));
+            scene.add(obj);
+            placedObjects.push(obj);
+
+            // Send build event online if host/client
+            if (sendNetwork && isOnline && conn && conn.open) {
+                conn.send({ type: 'build', x: obj.position.x, y: obj.position.y, z: obj.position.z, shape: shape, color: colorHex });
+            }
+        }
+
+        // --- CONTROLS & MOVEMENT ---
+        const controls = new THREE.PointerLockControls(camera, document.body);
+        let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false, canJump = false;
+        let velocity = new THREE.Vector3();
+        let direction = new THREE.Vector3();
+        let animTimer = 0;
+
+        document.addEventListener('keydown', (e) => {
+            if (!controls.isLocked) return;
             if (e.code === 'KeyW') moveForward = true;
             if (e.code === 'KeyS') moveBackward = true;
             if (e.code === 'KeyA') moveLeft = true;
             if (e.code === 'KeyD') moveRight = true;
+            if (e.code === 'Space' && canJump) { velocity.y += 10; canJump = false; }
         });
         document.addEventListener('keyup', (e) => {
             if (e.code === 'KeyW') moveForward = false;
@@ -239,50 +346,63 @@
             const delta = Math.min((time - prevTime) / 1000, 0.1);
 
             if (controls.isLocked) {
-                // Physics
-                if (moveForward) speed += acceleration * delta;
-                else if (moveBackward) speed -= acceleration * 1.5 * delta;
-                else speed -= speed * 2.0 * delta;
+                velocity.x -= velocity.x * 10.0 * delta;
+                velocity.z -= velocity.z * 10.0 * delta;
+                velocity.y -= 25.0 * delta; // Gravity
 
-                speed = Math.max(-30, Math.min(speed, maxSpeed));
-                speedVal.innerText = Math.round(Math.abs(speed));
+                direction.z = Number(moveForward) - Number(moveBackward);
+                direction.x = Number(moveRight) - Number(moveLeft);
+                direction.normalize();
 
-                if (moveLeft) hovercraftAngle += 1.5 * delta;
-                if (moveRight) hovercraftAngle -= 1.5 * delta;
+                if (moveForward || moveBackward) velocity.z -= direction.z * 35.0 * delta;
+                if (moveLeft || moveRight) velocity.x -= direction.x * 35.0 * delta;
 
-                playerHovercraft.position.x += Math.sin(hovercraftAngle) * speed * delta;
-                playerHovercraft.position.z += Math.cos(hovercraftAngle) * speed * delta;
-                playerHovercraft.rotation.y = hovercraftAngle;
-                playerHovercraft.position.x = Math.max(-28, Math.min(28, playerHovercraft.position.x));
+                controls.moveRight(-velocity.x * delta);
+                controls.moveForward(-velocity.z * delta);
 
-                // Camera follow
-                const camDistX = playerHovercraft.position.x - Math.sin(hovercraftAngle) * 12;
-                const camDistZ = playerHovercraft.position.z - Math.cos(hovercraftAngle) * 12;
-                camera.position.x += (camDistX - camera.position.x) * 0.1;
-                camera.position.z += (camDistZ - camera.position.z) * 0.1;
-                camera.position.y = playerHovercraft.position.y + 5;
-                camera.lookAt(playerHovercraft.position.x, playerHovercraft.position.y + 2, playerHovercraft.position.z + 10);
+                camera.position.y += velocity.y * delta;
 
-                // Smart AI Opponent Logic
-                if (gameMode === 'ai') {
-                    aiZ += aiSpeed * delta;
-                    // AI weaves slightly across track and matches competitive speed
-                    const aiX = Math.sin(aiZ * 0.01) * 15;
-                    aiHovercraft.position.set(aiX, 0, aiZ);
-                    aiHovercraft.rotation.y = Math.cos(aiZ * 0.01) * 0.2;
-
-                    // Loop AI track course infinitely
-                    if (aiZ > 1300) aiZ = 0;
+                if (camera.position.y < 3.5) {
+                    velocity.y = 0;
+                    camera.position.y = 3.5;
+                    canJump = true;
                 }
 
-                // Online Multiplayer sync
-                if (gameMode === 'online' && conn && conn.open) {
+                // Update character model position & walking animation
+                const camPos = camera.position;
+                playerGroup.position.set(camPos.x, camPos.y - 3.5, camPos.z);
+                playerGroup.rotation.y = controls.getObject().rotation.y;
+
+                const isMoving = moveForward || moveBackward || moveLeft || moveRight;
+                if (isMoving) {
+                    animTimer += delta * 12;
+                    leftArm.rotation.x = Math.sin(animTimer) * 0.6;
+                    rightArm.rotation.x = -Math.sin(animTimer) * 0.6;
+                    leftLeg.rotation.x = -Math.sin(animTimer) * 0.6;
+                    rightLeg.rotation.x = Math.sin(animTimer) * 0.6;
+                } else {
+                    leftArm.rotation.x = 0; rightArm.rotation.x = 0;
+                    leftLeg.rotation.x = 0; rightLeg.rotation.x = 0;
+                }
+
+                // Fast Pad Teleport Check
+                fastPads.forEach(pad => {
+                    const dist = new THREE.Vector2(camPos.x, camPos.z).distanceTo(new THREE.Vector2(pad.position.x, pad.position.z));
+                    if (dist < 3.0) {
+                        // Teleport to plot center or rotate around plots
+                        camera.position.x = pad.position.x;
+                        camera.position.z = pad.position.z + 8;
+                    }
+                });
+
+                // Send position online
+                if (isOnline && conn && conn.open) {
                     conn.send({
                         type: 'pos',
-                        x: playerHovercraft.position.x,
-                        y: playerHovercraft.position.y,
-                        z: playerHovercraft.position.z,
-                        ry: hovercraftAngle
+                        x: camPos.x,
+                        y: camPos.y,
+                        z: camPos.z,
+                        ry: controls.getObject().rotation.y
                     });
                 }
             }
