@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Neon Velocity - Online Hovercraft Racing</title>
+    <title>Neon Velocity - Singleplayer, AI Opponents & Online Multiplayer</title>
     <style>
         body { margin: 0; overflow: hidden; background-color: #03030c; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; user-select: none; }
         #menu {
@@ -14,12 +14,13 @@
         }
         h1 { font-size: 55px; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 6px; color: #00f0ff; text-shadow: 0 0 25px rgba(0,240,255,0.6); }
         p { color: #a19fc8; font-size: 18px; margin-bottom: 30px; }
+        .btn-group { display: flex; flex-direction: column; gap: 15px; align-items: center; }
         .btn {
-            background: linear-gradient(45deg, #00f0ff, #7000ff); color: #fff; border: none; padding: 16px 45px;
-            font-size: 18px; font-weight: bold; border-radius: 30px; cursor: pointer;
-            transition: 0.3s; box-shadow: 0 0 20px rgba(0,240,255,0.4); text-transform: uppercase; letter-spacing: 2px;
+            background: linear-gradient(45deg, #00f0ff, #7000ff); color: #fff; border: none; padding: 15px 40px;
+            font-size: 17px; font-weight: bold; border-radius: 30px; cursor: pointer;
+            transition: 0.3s; box-shadow: 0 0 20px rgba(0,240,255,0.4); text-transform: uppercase; letter-spacing: 2px; width: 280px;
         }
-        .btn:hover { box-shadow: 0 0 30px #00f0ff, 0 0 50px #7000ff; transform: scale(1.06); }
+        .btn:hover { box-shadow: 0 0 30px #00f0ff, 0 0 50px #7000ff; transform: scale(1.04); }
         #hud {
             position: absolute; top: 25px; left: 25px; color: #fff; font-size: 22px;
             font-weight: bold; pointer-events: none; z-index: 5; text-shadow: 0 0 8px rgba(0,240,255,0.8);
@@ -38,45 +39,57 @@
 
     <div id="menu">
         <h1>Neon Velocity</h1>
-        <p>Futuristic Online Hovercraft Circuit. Race with friends!</p>
-        <div style="margin-bottom: 20px;">
-            <button class="btn" id="hostBtn">Host Race Room</button>
-            <span style="margin: 0 20px; color: #555; font-weight: bold;">OR</span>
-            <button class="btn" id="joinBtn" style="background: linear-gradient(45deg, #ff007f, #ffaa00); box-shadow: 0 0 20px rgba(255,0,127,0.4);">Join Room Code</button>
+        <p>Futuristic Hovercraft Racing Circuit</p>
+        <div class="btn-group">
+            <button class="btn" id="aiBtn">Race vs Smart AI</button>
+            <button class="btn" id="hostBtn" style="background: linear-gradient(45deg, #00ff7f, #00f0ff);">Host Online Room</button>
+            <button class="btn" id="joinBtn" style="background: linear-gradient(45deg, #ff007f, #ffaa00);">Join Friend Code</button>
         </div>
-        <div id="roomInfo" style="margin-top: 15px; font-size: 16px; color: #00f0ff; max-width: 500px; line-height: 1.5;"></div>
+        <div id="roomInfo" style="margin-top: 20px; font-size: 16px; color: #00f0ff; max-width: 500px; line-height: 1.5;"></div>
     </div>
 
     <div id="hud">Speed: <span id="speedVal">0</span> KM/H</div>
     <div id="controls-hint"><b>W, A, S, D</b> = Steer & Drive Hovercraft | <b>Mouse</b> = Look Around | <b>ESC</b> = Pause</div>
 
     <script>
-        // --- MULTIPLAYER SETUP ---
+        // --- GAME MODES & MULTIPLAYER STATE ---
+        let gameMode = ''; // 'ai' or 'online'
         let peer, conn;
         let isHost = false;
         let myId = '';
         let remoteHovercraft;
-        let hasConnected = false;
+        let aiHovercraft;
+        let aiZ = 20;
+        let aiSpeed = 75;
 
         const menu = document.getElementById('menu');
         const roomInfo = document.getElementById('roomInfo');
         const speedVal = document.getElementById('speedVal');
 
+        document.getElementById('aiBtn').addEventListener('click', () => {
+            gameMode = 'ai';
+            menu.style.display = 'none';
+            controls.lock();
+            aiHovercraft.visible = true;
+        });
+
         document.getElementById('hostBtn').addEventListener('click', () => {
+            gameMode = 'online';
             peer = new Peer();
             peer.on('open', (id) => {
                 myId = id;
                 isHost = true;
-                roomInfo.innerHTML = `Room Code: <b style="color:#fff;font-size:20px;">${id}</b><br>Share this code with your friend! Waiting for connection...`;
+                roomInfo.innerHTML = `Room Code: <b style="color:#fff;font-size:20px;">${id}</b><br>Share this code with your friend! Waiting...`;
             });
             peer.on('connection', (connection) => {
                 conn = connection;
                 setupConnection();
-                startRace();
+                startOnlineGame();
             });
         });
 
         document.getElementById('joinBtn').addEventListener('click', () => {
+            gameMode = 'online';
             const friendId = prompt("Enter your friend's Room Code:");
             if (!friendId) return;
             peer = new Peer();
@@ -85,18 +98,18 @@
                 isHost = false;
                 conn = peer.connect(friendId);
                 setupConnection();
-                startRace();
+                startOnlineGame();
             });
         });
 
         function setupConnection() {
             conn.on('open', () => {
-                roomInfo.innerHTML = "Connected! Initializing track telemetry...";
+                roomInfo.innerHTML = "Connected! Launching race...";
                 setTimeout(() => {
                     menu.style.display = 'none';
                     controls.lock();
-                    hasConnected = true;
-                }, 1200);
+                    remoteHovercraft.visible = true;
+                }, 1000);
             });
             conn.on('data', (data) => {
                 if (data.type === 'pos' && remoteHovercraft) {
@@ -106,14 +119,14 @@
             });
         }
 
-        function startRace() {
+        function startOnlineGame() {
             setTimeout(() => {
-                if (!hasConnected) {
+                if (menu.style.display !== 'none') {
                     menu.style.display = 'none';
                     controls.lock();
-                    hasConnected = true;
+                    remoteHovercraft.visible = true;
                 }
-            }, 2000);
+            }, 1500);
         }
 
         // --- 3D GRAPHICS & SCENE SETUP ---
@@ -129,7 +142,6 @@
         renderer.shadowMap.enabled = true;
         document.body.appendChild(renderer.domElement);
 
-        // Lighting
         const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
         scene.add(ambientLight);
 
@@ -137,23 +149,20 @@
         dirLight.position.set(50, 80, 50);
         scene.add(dirLight);
 
-        // --- TRACK & SCI-FI ENVIRONMENT ---
+        // --- TRACK & ENVIRONMENT ---
         const trackGroup = new THREE.Group();
         scene.add(trackGroup);
 
         const floorMat = new THREE.MeshStandardMaterial({ color: 0x0c0b1c, roughness: 0.3, metalness: 0.8 });
-        const trackRoadGeo = new THREE.PlaneGeometry(60, 1000);
-        const trackRoad = new THREE.Mesh(trackRoadGeo, floorMat);
+        const trackRoad = new THREE.Mesh(new THREE.PlaneGeometry(60, 1500), floorMat);
         trackRoad.rotation.x = -Math.PI / 2;
-        trackRoad.position.set(0, 0, 450);
+        trackRoad.position.set(0, 0, 700);
         trackGroup.add(trackRoad);
 
-        // Glowing track side barriers & neon arches
         const barrierMat = new THREE.MeshBasicMaterial({ color: 0x00f0ff });
         const archMat = new THREE.MeshBasicMaterial({ color: 0xff007f });
 
-        for (let z = 0; z < 900; z += 50) {
-            // Left & Right neon lane barriers
+        for (let z = 0; z < 1400; z += 50) {
             const leftBar = new THREE.Mesh(new THREE.BoxGeometry(2, 4, 45), barrierMat);
             leftBar.position.set(-31, 2, z);
             trackGroup.add(leftBar);
@@ -162,13 +171,12 @@
             rightBar.position.set(31, 2, z);
             trackGroup.add(rightBar);
 
-            // Glowing Overhead Arches
             const archTop = new THREE.Mesh(new THREE.BoxGeometry(64, 1.5, 3), archMat);
             archTop.position.set(0, 18, z);
             trackGroup.add(archTop);
         }
 
-        // --- PLAYER HOVERCRAFT MODEL ---
+        // --- PLAYER HOVERCRAFT ---
         const playerHovercraft = new THREE.Group();
         const hullMat = new THREE.MeshStandardMaterial({ color: 0x00f0ff, metalness: 0.9, roughness: 0.2 });
         const cockpitMat = new THREE.MeshStandardMaterial({ color: 0xff007f, emissive: 0xff007f, emissiveIntensity: 0.5 });
@@ -180,23 +188,31 @@
         const cockpit = new THREE.Mesh(new THREE.BoxGeometry(2, 1, 3), cockpitMat);
         cockpit.position.set(0, 2, 0.5);
         playerHovercraft.add(cockpit);
-
         scene.add(playerHovercraft);
 
-        // --- REMOTE FRIEND HOVERCRAFT MODEL ---
+        // --- REMOTE FRIEND HOVERCRAFT ---
         remoteHovercraft = new THREE.Group();
         const rHull = new THREE.Mesh(new THREE.BoxGeometry(3.5, 1.2, 7), new THREE.MeshStandardMaterial({ color: 0xffaa00, metalness: 0.9 }));
         rHull.position.y = 1.5;
         remoteHovercraft.add(rHull);
+        remoteHovercraft.visible = false;
         scene.add(remoteHovercraft);
-        remoteHovercraft.position.set(10, 0, 20);
+
+        // --- SMART AI OPPONENT HOVERCRAFT ---
+        aiHovercraft = new THREE.Group();
+        const aiHull = new THREE.Mesh(new THREE.BoxGeometry(3.5, 1.2, 7), new THREE.MeshStandardMaterial({ color: 0xff0055, metalness: 0.9 }));
+        aiHull.position.y = 1.5;
+        aiHovercraft.add(aiHull);
+        aiHovercraft.visible = false;
+        scene.add(aiHovercraft);
+        aiHovercraft.position.set(8, 0, 30);
 
         // --- CONTROLS & PHYSICS ---
         const controls = new THREE.PointerLockControls(camera, document.body);
         let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false;
         let speed = 0;
-        let maxSpeed = 120.0;
-        let acceleration = 50.0;
+        let maxSpeed = 130.0;
+        let acceleration = 55.0;
         let steering = 0;
         let hovercraftAngle = 0;
 
@@ -223,31 +239,23 @@
             const delta = Math.min((time - prevTime) / 1000, 0.1);
 
             if (controls.isLocked) {
-                // Hovercraft physics & acceleration
-                if (moveForward) {
-                    speed += acceleration * delta;
-                } else if (moveBackward) {
-                    speed -= acceleration * 1.5 * delta;
-                } else {
-                    speed -= speed * 2.0 * delta; // Natural friction
-                }
+                // Physics
+                if (moveForward) speed += acceleration * delta;
+                else if (moveBackward) speed -= acceleration * 1.5 * delta;
+                else speed -= speed * 2.0 * delta;
 
                 speed = Math.max(-30, Math.min(speed, maxSpeed));
                 speedVal.innerText = Math.round(Math.abs(speed));
 
-                // Steering
                 if (moveLeft) hovercraftAngle += 1.5 * delta;
                 if (moveRight) hovercraftAngle -= 1.5 * delta;
 
-                // Move hovercraft forward based on angle
                 playerHovercraft.position.x += Math.sin(hovercraftAngle) * speed * delta;
                 playerHovercraft.position.z += Math.cos(hovercraftAngle) * speed * delta;
                 playerHovercraft.rotation.y = hovercraftAngle;
-
-                // Keep hovercraft bounded within the track walls (-28 to 28)
                 playerHovercraft.position.x = Math.max(-28, Math.min(28, playerHovercraft.position.x));
 
-                // Smooth third-person camera following hovercraft
+                // Camera follow
                 const camDistX = playerHovercraft.position.x - Math.sin(hovercraftAngle) * 12;
                 const camDistZ = playerHovercraft.position.z - Math.cos(hovercraftAngle) * 12;
                 camera.position.x += (camDistX - camera.position.x) * 0.1;
@@ -255,8 +263,20 @@
                 camera.position.y = playerHovercraft.position.y + 5;
                 camera.lookAt(playerHovercraft.position.x, playerHovercraft.position.y + 2, playerHovercraft.position.z + 10);
 
-                // Send position to friend online
-                if (conn && conn.open) {
+                // Smart AI Opponent Logic
+                if (gameMode === 'ai') {
+                    aiZ += aiSpeed * delta;
+                    // AI weaves slightly across track and matches competitive speed
+                    const aiX = Math.sin(aiZ * 0.01) * 15;
+                    aiHovercraft.position.set(aiX, 0, aiZ);
+                    aiHovercraft.rotation.y = Math.cos(aiZ * 0.01) * 0.2;
+
+                    // Loop AI track course infinitely
+                    if (aiZ > 1300) aiZ = 0;
+                }
+
+                // Online Multiplayer sync
+                if (gameMode === 'online' && conn && conn.open) {
                     conn.send({
                         type: 'pos',
                         x: playerHovercraft.position.x,
