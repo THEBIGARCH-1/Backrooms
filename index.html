@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BlockVerse - Ultimate Plot Sandbox & Character Creator</title>
+    <title>BlockVerse - AI Object Spawner & Plot Sandbox</title>
     <style>
         body { margin: 0; overflow: hidden; background-color: #87CEEB; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; user-select: none; }
         #menu {
@@ -25,6 +25,20 @@
             font-weight: bold; pointer-events: none; z-index: 10; text-shadow: 0 2px 4px rgba(0,0,0,0.8);
             background: rgba(0,0,0,0.4); padding: 12px 20px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.2);
         }
+        #spawn-ui {
+            position: absolute; top: 20px; right: 20px; background: rgba(0,0,0,0.7); padding: 15px;
+            border-radius: 14px; z-index: 10; backdrop-filter: blur(5px); display: flex; flex-direction: column; gap: 8px;
+            border: 1px solid rgba(255,255,255,0.3);
+        }
+        #spawnInput {
+            padding: 10px; font-size: 14px; border-radius: 8px; border: none; outline: none; width: 220px;
+            font-family: inherit; background: #fff; color: #333;
+        }
+        .spawn-btn {
+            background: #00bcd4; color: #fff; border: none; padding: 8px 12px; border-radius: 8px;
+            font-weight: bold; cursor: pointer; transition: 0.2s; text-transform: uppercase; font-size: 13px;
+        }
+        .spawn-btn:hover { background: #00acc1; }
         #toolbar {
             position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
             display: flex; gap: 10px; background: rgba(0,0,0,0.6); padding: 12px 20px;
@@ -49,7 +63,7 @@
 
     <div id="menu">
         <h1>BlockVerse</h1>
-        <p>Build your dream plot, visit friends via Fast Pads, and customize your character!</p>
+        <p>Build plots, visit friends via Fast Pads, and use AI to spawn any object!</p>
         <div>
             <button class="btn" id="startBtn">Enter Sandbox World</button>
             <button class="btn" id="hostOnlineBtn" style="background:#00bcd4;">Host Online Room</button>
@@ -61,7 +75,13 @@
     <div id="hud">
         Tool: <span id="currentToolName" style="color:#ffeb3b;">Cube Block</span><br>
         Color: <span id="currentColorName" style="color:#ff5722;">Orange</span><br>
-        <span style="font-size:13px; color:#ccc;">Press 1-4 to switch shapes | B to cycle color | E to open/close menu</span>
+        <span style="font-size:13px; color:#ccc;">Press 1-4 to switch shapes | B to cycle color</span>
+    </div>
+
+    <div id="spawn-ui">
+        <label style="color:#fff; font-size:13px; font-weight:bold;">AI 3D Object Generator:</label>
+        <input type="text" id="spawnInput" placeholder="e.g. big blue house, racecar, tree...">
+        <button class="spawn-btn" onclick="spawnAIObjectPrompt()">Spawn Object</button>
     </div>
 
     <div id="toolbar">
@@ -127,13 +147,15 @@
                     updateRemotePlayer(data);
                 } else if (data.type === 'build') {
                     spawnPlacedObject(data.x, data.y, data.z, data.shape, data.color, false);
+                } else if (data.type === 'ai_spawn') {
+                    createComplexCustomObject(data.query, data.x, data.y, data.z, false);
                 }
             });
         }
 
         // --- 3D SCENE SETUP ---
         const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x87CEEB); // Sky blue
+        scene.background = new THREE.Color(0x87CEEB);
         scene.fog = new THREE.FogExp2(0x87CEEB, 0.008);
 
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.5, 1000);
@@ -171,47 +193,39 @@
         const fastPads = [];
 
         plotPositions.forEach((p, idx) => {
-            // Plot base ground
             const baseGeo = new THREE.BoxGeometry(plotSize, 1, plotSize);
             const baseMat = new THREE.MeshStandardMaterial({ color: idx === 0 ? 0x76c752 : 0x8bc34a, roughness: 0.7 });
             const plotBase = new THREE.Mesh(baseGeo, baseMat);
             plotBase.position.set(p.x, -0.5, p.z);
             plotsGroup.add(plotBase);
 
-            // Border fence
             const borderMat = new THREE.MeshStandardMaterial({ color: 0x555 });
             const fence = new THREE.Mesh(new THREE.BoxGeometry(plotSize, 0.5, 1), borderMat);
             fence.position.set(p.x, 0.2, p.z - plotSize/2);
             plotsGroup.add(fence);
 
-            // Fast Pad in the center of each plot to teleport around quickly
             const padGeo = new THREE.CylinderGeometry(3, 3, 0.3, 32);
             const padMat = new THREE.MeshStandardMaterial({ color: 0x00bcd4, emissive: 0x00bcd4, emissiveIntensity: 0.6 });
             const fastPad = new THREE.Mesh(padGeo, padMat);
             fastPad.position.set(p.x, 0.1, p.z);
-            fastPad.userData = { targetX: p.x, targetZ: p.z + 10 };
             plotsGroup.add(fastPad);
             fastPads.push(fastPad);
         });
 
-        // --- PLAYER CHARACTER (Roblox-style Blocky Avatar with Animations) ---
+        // --- PLAYER CHARACTER MODEL ---
         const playerGroup = new THREE.Group();
-        
         const skinMat = new THREE.MeshStandardMaterial({ color: 0xffcc99 });
-        const shirtMat = new THREE.MeshStandardMaterial({ color: 0x3f51b5 }); // Blue torso
-        const pantsMat = new THREE.MeshStandardMaterial({ color: 0x212121 }); // Dark pants
+        const shirtMat = new THREE.MeshStandardMaterial({ color: 0x3f51b5 });
+        const pantsMat = new THREE.MeshStandardMaterial({ color: 0x212121 });
 
-        // Torso
         const torso = new THREE.Mesh(new THREE.BoxGeometry(1.2, 1.8, 0.6), shirtMat);
         torso.position.y = 2.5;
         playerGroup.add(torso);
 
-        // Head
         const head = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), skinMat);
         head.position.y = 3.8;
         playerGroup.add(head);
 
-        // Limbs for walking animation
         const limbGeo = new THREE.BoxGeometry(0.5, 1.8, 0.5);
         const leftArm = new THREE.Mesh(limbGeo, shirtMat);
         leftArm.position.set(-0.9, 2.5, 0);
@@ -229,10 +243,8 @@
         rightLeg.position.set(0.35, 1.0, 0);
         playerGroup.add(rightLeg);
 
-        // Attach character model to camera view or track separately in third/first person
         scene.add(playerGroup);
 
-        // --- REMOTE FRIEND AVATAR ---
         const remotePlayer = playerGroup.clone();
         remotePlayer.visible = false;
         scene.add(remotePlayer);
@@ -243,8 +255,84 @@
             remotePlayer.rotation.y = data.ry;
         }
 
+        // --- AI OBJECT SPAWNER SYSTEM ---
+        function spawnAIObjectPrompt() {
+            const query = document.getElementById('spawnInput').value.trim();
+            if (!query) return;
+
+            // Calculate spawn position directly in front of the player
+            const dir = new THREE.Vector3();
+            camera.getWorldDirection(dir);
+            const spawnPos = camera.position.clone().add(dir.multiplyScalar(8));
+            spawnPos.y = Math.max(0, spawnPos.y);
+
+            createComplexCustomObject(query, spawnPos.x, spawnPos.y, spawnPos.z, true);
+            document.getElementById('spawnInput').value = '';
+        }
+
+        function createComplexCustomObject(query, x, y, z, sendNetwork) {
+            const group = new THREE.Group();
+            const lowerQuery = query.toLowerCase();
+
+            // Smart procedural generator based on descriptive search keywords
+            let mainColor = 0xff5722;
+            if (lowerQuery.includes('blue')) mainColor = 0x2196f3;
+            else if (lowerQuery.includes('red')) mainColor = 0xf44336;
+            else if (lowerQuery.includes('green')) mainColor = 0x4caf50;
+            else if (lowerQuery.includes('yellow')) mainColor = 0xffeb3b;
+            else if (lowerQuery.includes('pink')) mainColor = 0xe91e63;
+            else if (lowerQuery.includes('purple')) mainColor = 0x9c27b0;
+            else if (lowerQuery.includes('white')) mainColor = 0xffffff;
+
+            const mat = new THREE.MeshStandardMaterial({ color: mainColor, roughness: 0.3 });
+            const secondaryMat = new THREE.MeshStandardMaterial({ color: 0x333333, roughness: 0.5 });
+
+            if (lowerQuery.includes('house') || lowerQuery.includes('home') || lowerQuery.includes('building')) {
+                // House Structure
+                const base = new THREE.Mesh(new THREE.BoxGeometry(6, 4, 6), mat);
+                base.position.y = 2;
+                group.add(base);
+                const roof = new THREE.Mesh(new THREE.ConeGeometry(5, 3, 4), new THREE.MeshStandardMaterial({ color: 0x8b0000 }));
+                roof.position.y = 5.5;
+                roof.rotation.y = Math.PI / 4;
+                group.add(roof);
+            } else if (lowerQuery.includes('car') || lowerQuery.includes('racecar') || lowerQuery.includes('vehicle')) {
+                // Car Structure
+                const carBody = new THREE.Mesh(new THREE.BoxGeometry(3, 1.2, 6), mat);
+                carBody.position.y = 1;
+                group.add(carBody);
+                const cabin = new THREE.Mesh(new THREE.BoxGeometry(2.2, 1, 3), new THREE.MeshStandardMaterial({ color: 0x111111 }));
+                cabin.position.set(0, 2, -0.5);
+                group.add(cabin);
+            } else if (lowerQuery.includes('tree') || lowerQuery.includes('plant')) {
+                // Tree Structure
+                const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.7, 4, 8), new THREE.MeshStandardMaterial({ color: 0x8b5a2b }));
+                trunk.position.y = 2;
+                group.add(trunk);
+                const leaves = new THREE.Mesh(new THREE.SphereGeometry(2.5, 12, 12), new THREE.MeshStandardMaterial({ color: 0x2e8b57 }));
+                leaves.position.y = 5;
+                group.add(leaves);
+            } else {
+                // Generic intricate custom shape representation for any custom idea
+                const centerPiece = new THREE.Mesh(new THREE.BoxGeometry(3, 3, 3), mat);
+                centerPiece.position.y = 1.5;
+                group.add(centerPiece);
+                const topPiece = new THREE.Mesh(new THREE.SphereGeometry(1.5, 16, 16), secondaryMat);
+                topPiece.position.y = 3.5;
+                group.add(topPiece);
+            }
+
+            group.position.set(x, y, z);
+            scene.add(group);
+            placedObjects.push(group);
+
+            if (sendNetwork && isOnline && conn && conn.open) {
+                conn.send({ type: 'ai_spawn', query: query, x: x, y: y, z: z });
+            }
+        }
+
         // --- BUILDING & PLACING SYSTEM ---
-        let currentShape = 'cube'; // cube, sphere, ramp, delete
+        let currentShape = 'cube';
         let currentColorIndex = 0;
         const colors = [0xff5722, 0x4caf50, 0x2196f3, 0xffeb3b, 0x9c27b0, 0xffffff, 0x333333];
         const colorNames = ['Orange', 'Green', 'Blue', 'Yellow', 'Purple', 'White', 'Dark'];
@@ -270,9 +358,10 @@
             }
         });
 
-        // Click to place or delete objects
-        window.addEventListener('mousedown', () => {
+        window.addEventListener('mousedown', (e) => {
             if (!controls.isLocked) return;
+            // Prevent placing when typing or clicking spawn UI
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON') return;
 
             const raycaster = new THREE.Raycaster();
             raycaster.setFromCamera(new THREE.Vector2(0, 0), camera);
@@ -282,14 +371,17 @@
                 const hit = intersects[0];
 
                 if (currentShape === 'delete') {
-                    // Remove object if clicked
-                    if (hit.object && hit.object !== plotBase && hit.object !== floor && !fastPads.includes(hit.object)) {
-                        scene.remove(hit.object);
-                        const idx = placedObjects.indexOf(hit.object);
+                    if (hit.object && !fastPads.includes(hit.object)) {
+                        // Find top group/object to remove
+                        let rootObj = hit.object;
+                        while (rootObj.parent && rootObj.parent !== scene) {
+                            rootObj = rootObj.parent;
+                        }
+                        scene.remove(rootObj);
+                        const idx = placedObjects.indexOf(rootObj);
                         if (idx > -1) placedObjects.splice(idx, 1);
                     }
                 } else {
-                    // Place new block/shape with building animation effect
                     const pos = hit.point.clone().add(hit.face.normal.clone().multiplyScalar(1.5));
                     spawnPlacedObject(pos.x, Math.max(0, pos.y), pos.z, currentShape, colors[currentColorIndex], true);
                 }
@@ -300,7 +392,7 @@
             let geo;
             if (shape === 'cube') geo = new THREE.BoxGeometry(2, 2, 2);
             else if (shape === 'sphere') geo = new THREE.SphereGeometry(1.2, 16, 16);
-            else if (shape === 'ramp') geo = new THREE.BoxGeometry(2, 2, 2); // Simplified ramp block
+            else if (shape === 'ramp') geo = new THREE.BoxGeometry(2, 2, 2);
 
             const mat = new THREE.MeshStandardMaterial({ color: colorHex, roughness: 0.3 });
             const obj = new THREE.Mesh(geo, mat);
@@ -308,7 +400,6 @@
             scene.add(obj);
             placedObjects.push(obj);
 
-            // Send build event online if host/client
             if (sendNetwork && isOnline && conn && conn.open) {
                 conn.send({ type: 'build', x: obj.position.x, y: obj.position.y, z: obj.position.z, shape: shape, color: colorHex });
             }
@@ -348,7 +439,7 @@
             if (controls.isLocked) {
                 velocity.x -= velocity.x * 10.0 * delta;
                 velocity.z -= velocity.z * 10.0 * delta;
-                velocity.y -= 25.0 * delta; // Gravity
+                velocity.y -= 25.0 * delta;
 
                 direction.z = Number(moveForward) - Number(moveBackward);
                 direction.x = Number(moveRight) - Number(moveLeft);
@@ -368,7 +459,6 @@
                     canJump = true;
                 }
 
-                // Update character model position & walking animation
                 const camPos = camera.position;
                 playerGroup.position.set(camPos.x, camPos.y - 3.5, camPos.z);
                 playerGroup.rotation.y = controls.getObject().rotation.y;
@@ -385,17 +475,14 @@
                     leftLeg.rotation.x = 0; rightLeg.rotation.x = 0;
                 }
 
-                // Fast Pad Teleport Check
                 fastPads.forEach(pad => {
                     const dist = new THREE.Vector2(camPos.x, camPos.z).distanceTo(new THREE.Vector2(pad.position.x, pad.position.z));
                     if (dist < 3.0) {
-                        // Teleport to plot center or rotate around plots
                         camera.position.x = pad.position.x;
                         camera.position.z = pad.position.z + 8;
                     }
                 });
 
-                // Send position online
                 if (isOnline && conn && conn.open) {
                     conn.send({
                         type: 'pos',
