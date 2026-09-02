@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SkyPVP Arena - Fixed Collision & Multiplayer</title>
+    <title>SkyPVP Arena - Bridges, Loadout & Jetpack Flight</title>
     <style>
         body { margin: 0; overflow: hidden; background-color: #0b1d3a; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; user-select: none; }
         #menu {
@@ -25,6 +25,16 @@
             font-weight: bold; pointer-events: none; z-index: 10; text-shadow: 0 2px 4px rgba(0,0,0,0.8);
             background: rgba(0,0,0,0.6); padding: 14px 22px; border-radius: 14px; border: 1px solid rgba(0,255,204,0.3);
         }
+        #loadout-bar {
+            position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
+            display: flex; gap: 12px; background: rgba(0,0,0,0.75); padding: 12px 24px;
+            border-radius: 18px; z-index: 10; backdrop-filter: blur(6px); color: #fff; font-size: 15px; font-weight: bold;
+        }
+        .slot {
+            background: #222; border: 2px solid #00ffcc; padding: 10px 18px; border-radius: 10px; text-align: center;
+            box-shadow: 0 4px 10px rgba(0,255,204,0.2);
+        }
+        .slot.active { background: #00ffcc; color: #000; }
         #crosshair {
             position: absolute; top: 50%; left: 50%; width: 10px; height: 10px;
             background-color: rgba(0, 255, 204, 0.9); border: 2px solid #000; border-radius: 50%;
@@ -39,7 +49,7 @@
 
     <div id="menu">
         <h1>SkyPVP Arena</h1>
-        <p>Collision fixed! Explore floating islands, shoot energy orbs, and battle friends.</p>
+        <p>Connected islands with bridges, custom loadout (Sword, Cannon, Jetpack Flight)!</p>
         <div>
             <button class="btn" id="startBtn">Singleplayer Practice</button>
             <button class="btn" id="hostOnlineBtn" style="background:#00bcd4;">Host Arena Match</button>
@@ -51,7 +61,13 @@
     <div id="hud">
         Health: <span id="healthDisplay" style="color:#ff0055;">100 / 100</span><br>
         Score / Kills: <span id="scoreDisplay" style="color:#00ffcc;">0</span><br>
-        <span style="font-size:13px; color:#aaa;">WASD to Move | Space to Jump | Click to Shoot Energy Orb | V to Unlock Mouse</span>
+        <span style="font-size:13px; color:#aaa;">WASD to Move | Space to Jetpack Fly | 1/2/3 to Switch Loadout | Click to Attack</span>
+    </div>
+
+    <div id="loadout-bar">
+        <div class="slot active" id="slot1">1: Energy Sword</div>
+        <div class="slot" id="slot2">2: Hand Cannon</div>
+        <div class="slot" id="slot3">3: Jetpack Engine</div>
     </div>
 
     <div id="crosshair"></div>
@@ -113,12 +129,12 @@
                         remotePlayer.rotation.y = data.ry;
                     }
                 } else if (data.type === 'attack') {
-                    spawnEnergyOrb(data.x, data.y, data.z, data.dx, data.dy, data.dz, false);
+                    spawnProjectile(data.x, data.y, data.z, data.dx, data.dy, data.dz, data.isCannon, false);
                 } else if (data.type === 'damage') {
                     playerHealth = Math.max(0, playerHealth - data.amount);
                     document.getElementById('healthDisplay').innerText = `${playerHealth} / 100`;
                     if (playerHealth <= 0) {
-                        alert("You were defeated! Respawning...");
+                        alert("You were defeated! Respawning at Center Island...");
                         playerHealth = 100;
                         camera.position.set(0, 15, 0);
                     }
@@ -147,41 +163,64 @@
         sunLight.castShadow = true;
         scene.add(sunLight);
 
-        // --- FLOATING ISLANDS MAP & ROBUST COLLISION DATA ---
-        const islandsGroup = new THREE.Group();
-        scene.add(islandsGroup);
-
+        // --- ISLANDS & CONNECTING BRIDGES SETUP ---
+        const solidObjects = [];
         const islandData = [
-            { x: 0, y: 0, z: 0, size: 45 },
-            { x: 70, y: 5, z: -70, size: 30 },
-            { x: -70, y: 8, z: -70, size: 30 },
-            { x: 70, y: 5, z: 70, size: 30 },
-            { x: -70, y: 8, z: 70, size: 30 },
-            { x: 0, y: 15, z: -120, size: 35 }
+            { x: 0, y: 10, z: 0, size: 35 },      // Center Island
+            { x: 70, y: 10, z: 0, size: 25 },     // East Island
+            { x: -70, y: 10, z: 0, size: 25 },    // West Island
+            { x: 0, y: 10, z: 70, size: 25 },     // North Island
+            { x: 0, y: 10, z: -70, size: 25 }     // South Island
         ];
 
         islandData.forEach(data => {
-            const rockGeo = new THREE.ConeGeometry(data.size, data.size * 0.8, 7);
+            // Rock underside
+            const rockGeo = new THREE.ConeGeometry(data.size, data.size * 0.7, 7);
             const rockMat = new THREE.MeshStandardMaterial({ color: 0x3a4b65, roughness: 0.9 });
             const rock = new THREE.Mesh(rockGeo, rockMat);
-            rock.position.set(data.x, data.y - (data.size * 0.4), data.z);
+            rock.position.set(data.x, data.y - (data.size * 0.35), data.z);
             rock.rotation.x = Math.PI;
-            islandsGroup.add(rock);
+            scene.add(rock);
 
-            const topGeo = new THREE.CylinderGeometry(data.size, data.size * 0.9, 4, 16);
+            // Island top surface
+            const topGeo = new THREE.CylinderGeometry(data.size, data.size * 0.9, 3, 16);
             const topMat = new THREE.MeshStandardMaterial({ color: 0x1b4332, roughness: 0.6 });
             const top = new THREE.Mesh(topGeo, topMat);
             top.position.set(data.x, data.y, data.z);
-            islandsGroup.add(top);
-
-            const pillarGeo = new THREE.BoxGeometry(3, 14, 3);
-            const pillarMat = new THREE.MeshStandardMaterial({ color: 0x00ffcc, emissive: 0x00ffcc, emissiveIntensity: 0.5 });
-            const pillar = new THREE.Mesh(pillarGeo, pillarMat);
-            pillar.position.set(data.x + (data.size * 0.4), data.y + 7, data.z + (data.size * 0.4));
-            islandsGroup.add(pillar);
+            scene.add(top);
+            solidObjects.push({ x: data.x, z: data.z, radius: data.size, y: data.y });
         });
 
-        // --- PLAYER MODELS ---
+        // Connecting Bridges from Center (0,0,0) to Outer Islands
+        const bridgeData = [
+            { startX: 0, startZ: 0, endX: 70, endZ: 0 },
+            { startX: 0, startZ: 0, endX: -70, endZ: 0 },
+            { startX: 0, startZ: 0, endX: 0, endZ: 70 },
+            { startX: 0, startZ: 0, endX: 0, endZ: -70 }
+        ];
+
+        const bridgeColliders = [];
+
+        bridgeData.forEach(b => {
+            const length = Math.hypot(b.endX - b.startX, b.endZ - b.startZ);
+            const bridgeGeo = new THREE.BoxGeometry(6, 1, length);
+            const bridgeMat = new THREE.MeshStandardMaterial({ color: 0x4a5568, roughness: 0.7 });
+            const bridge = new THREE.Mesh(bridgeGeo, bridgeMat);
+            
+            const centerX = (b.startX + b.endX) / 2;
+            const centerZ = (b.startZ + b.endZ) / 2;
+            bridge.position.set(centerX, 10, centerZ);
+
+            if (b.startX !== b.endX) {
+                bridge.rotation.y = Math.PI / 2;
+            }
+            scene.add(bridge);
+            bridgeColliders.push({ x1: Math.min(b.startX, b.endX) - 4, x2: Math.max(b.startX, b.endX) + 4, z1: Math.min(b.startZ, b.endZ) - 4, z2: Math.max(b.startZ, b.endZ) + 4, y: 10 });
+        });
+
+        // --- PLAYER MODELS & LOADOUT STATE ---
+        let currentSlot = 1; // 1: Sword, 2: Cannon, 3: Jetpack
+
         function createPlayerModel(isRemote) {
             const group = new THREE.Group();
             const armorMat = new THREE.MeshStandardMaterial({ color: isRemote ? 0xff0055 : 0x00ffcc, roughness: 0.3 });
@@ -199,9 +238,10 @@
             visor.position.set(0, 3.8, -0.45);
             group.add(visor);
 
-            const swordBlade = new THREE.Mesh(new THREE.BoxGeometry(0.2, 2.5, 0.2), armorMat);
-            swordBlade.position.set(0.9, 2.2, -0.5);
-            group.add(swordBlade);
+            // Jetpack tank on back
+            const jetpack = new THREE.Mesh(new THREE.BoxGeometry(1, 1.4, 0.6), new THREE.MeshStandardMaterial({ color: 0x444444 }));
+            jetpack.position.set(0, 2.6, 0.5);
+            group.add(jetpack);
 
             return group;
         }
@@ -213,25 +253,26 @@
         remotePlayer.visible = false;
         scene.add(remotePlayer);
 
-        // --- PROJECTILES ---
+        // --- PROJECTILES SYSTEM ---
         const activeProjectiles = [];
 
-        function spawnEnergyOrb(x, y, z, dx, dy, dz, sendNetwork) {
-            const orbGeo = new THREE.SphereGeometry(0.5, 16, 16);
-            const orbMat = new THREE.MeshStandardMaterial({ color: 0x00ffcc, emissive: 0x00ffcc, emissiveIntensity: 1.0 });
-            const orb = new THREE.Mesh(orbGeo, orbMat);
-            orb.position.set(x, y, z);
-            scene.add(orb);
+        function spawnProjectile(x, y, z, dx, dy, dz, isCannon, sendNetwork) {
+            const geo = isCannon ? new THREE.SphereGeometry(0.8, 16, 16) : new THREE.BoxGeometry(0.3, 0.3, 2.0);
+            const mat = new THREE.MeshStandardMaterial({ color: isCannon ? 0xff5500 : 0x00ffcc, emissive: isCannon ? 0xff3300 : 0x00ffcc, emissiveIntensity: 1.0 });
+            const proj = new THREE.Mesh(geo, mat);
+            proj.position.set(x, y, z);
+            scene.add(proj);
 
             activeProjectiles.push({
-                mesh: orb,
+                mesh: proj,
                 dir: new THREE.Vector3(dx, dy, dz).normalize(),
-                speed: 45,
+                speed: isCannon ? 35 : 55,
+                damage: isCannon ? 40 : 20,
                 life: 3.0
             });
 
             if (sendNetwork && isOnline && conn && conn.open) {
-                conn.send({ type: 'attack', x: x, y: y, z: z, dx: dx, dy: dy, dz: dz });
+                conn.send({ type: 'attack', x: x, y: y, z: z, dx: dx, dy: dy, dz: dz, isCannon: isCannon });
             }
         }
 
@@ -243,12 +284,19 @@
             const dir = new THREE.Vector3();
             camera.getWorldDirection(dir);
             const spawnPos = camera.position.clone().add(dir.clone().multiplyScalar(2));
-            spawnEnergyOrb(spawnPos.x, spawnPos.y, spawnPos.z, dir.x, dir.y, dir.z, true);
+
+            if (currentSlot === 1) {
+                // Sword melee / energy slash
+                spawnProjectile(spawnPos.x, spawnPos.y, spawnPos.z, dir.x, dir.y, dir.z, false, true);
+            } else if (currentSlot === 2) {
+                // Cannon blast
+                spawnProjectile(spawnPos.x, spawnPos.y, spawnPos.z, dir.x, dir.y, dir.z, true, true);
+            }
         });
 
-        // --- CONTROLS & PHYSICS ---
+        // --- CONTROLS & JETPACK PHYSICS ---
         const controls = new THREE.PointerLockControls(camera, document.body);
-        let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false, canJump = false;
+        let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false, canJump = false, isJetpacking = false;
         let velocity = new THREE.Vector3();
         let direction = new THREE.Vector3();
 
@@ -258,12 +306,26 @@
                 else controls.lock();
                 return;
             }
+
+            // Loadout Selection Slots (1, 2, 3)
+            if (e.code === 'Digit1') { currentSlot = 1; updateLoadoutUI(); }
+            if (e.code === 'Digit2') { currentSlot = 2; updateLoadoutUI(); }
+            if (e.code === 'Digit3') { currentSlot = 3; updateLoadoutUI(); }
+
             if (!controls.isLocked) return;
             if (e.code === 'KeyW') moveForward = true;
             if (e.code === 'KeyS') moveBackward = true;
             if (e.code === 'KeyA') moveLeft = true;
             if (e.code === 'KeyD') moveRight = true;
-            if (e.code === 'Space' && canJump) { velocity.y += 14; canJump = false; }
+            
+            if (e.code === 'Space') {
+                if (currentSlot === 3) {
+                    isJetpacking = true; // Jetpack flight active
+                } else if (canJump) {
+                    velocity.y += 12;
+                    canJump = false;
+                }
+            }
         });
 
         document.addEventListener('keyup', (e) => {
@@ -271,7 +333,15 @@
             if (e.code === 'KeyS') moveBackward = false;
             if (e.code === 'KeyA') moveLeft = false;
             if (e.code === 'KeyD') moveRight = false;
+            if (e.code === 'Space') isJetpacking = false;
         });
+
+        function updateLoadoutUI() {
+            document.querySelectorAll('.slot').forEach((el, idx) => {
+                if (idx + 1 === currentSlot) el.classList.add('active');
+                else el.classList.remove('active');
+            });
+        }
 
         // --- GAME LOOP ---
         let prevTime = performance.now();
@@ -285,7 +355,13 @@
             if (controls.isLocked) {
                 velocity.x -= velocity.x * 10.0 * delta;
                 velocity.z -= velocity.z * 10.0 * delta;
-                velocity.y -= 35.0 * delta; // Gravity
+
+                if (isJetpacking && currentSlot === 3) {
+                    velocity.y += 25.0 * delta; // Jetpack upward boost
+                    velocity.y = Math.min(velocity.y, 12);
+                } else {
+                    velocity.y -= 30.0 * delta; // Standard Gravity
+                }
 
                 direction.z = Number(moveForward) - Number(moveBackward);
                 direction.x = Number(moveRight) - Number(moveLeft);
@@ -299,18 +375,29 @@
 
                 camera.position.y += velocity.y * delta;
 
-                // FIXED ROBUST COLLISION ENGINE
+                // Collision detection with Islands and Bridges
                 let grounded = false;
                 const playerFootY = camera.position.y - 3.5;
 
-                islandData.forEach(data => {
-                    const distXZ = Math.hypot(camera.position.x - data.x, camera.position.z - data.z);
-                    const surfaceTopY = data.y + 2.0;
-                    const surfaceBottomY = data.y - 2.0;
+                // Check Islands
+                solidObjects.forEach(island => {
+                    const distXZ = Math.hypot(camera.position.x - island.x, camera.position.z - island.z);
+                    const surfaceTopY = island.y + 1.5;
+                    const surfaceBottomY = island.y - 1.5;
 
-                    // If player is within island radius and falling through or standing near the top surface
-                    if (distXZ < data.size) {
-                        if (playerFootY <= surfaceTopY && playerFootY >= surfaceBottomY && velocity.y <= 0) {
+                    if (distXZ < island.radius && playerFootY <= surfaceTopY && playerFootY >= surfaceBottomY && velocity.y <= 0) {
+                        camera.position.y = surfaceTopY + 3.5;
+                        velocity.y = 0;
+                        canJump = true;
+                        grounded = true;
+                    }
+                });
+
+                // Check Bridges
+                bridgeColliders.forEach(b => {
+                    if (camera.position.x >= b.x1 && camera.position.x <= b.x2 && camera.position.z >= b.z1 && camera.position.z <= b.z2) {
+                        const surfaceTopY = b.y + 0.5;
+                        if (playerFootY <= surfaceTopY + 1 && playerFootY >= surfaceTopY - 2 && velocity.y <= 0) {
                             camera.position.y = surfaceTopY + 3.5;
                             velocity.y = 0;
                             canJump = true;
@@ -319,7 +406,7 @@
                     }
                 });
 
-                if (!grounded && velocity.y < 0) {
+                if (!grounded && velocity.y < 0 && !isJetpacking) {
                     canJump = false;
                 }
 
@@ -343,7 +430,7 @@
                         scene.remove(p.mesh);
                         activeProjectiles.splice(i, 1);
                         if (isOnline && conn && conn.open) {
-                            conn.send({ type: 'damage', amount: 25 });
+                            conn.send({ type: 'damage', amount: p.damage });
                         }
                         continue;
                     }
