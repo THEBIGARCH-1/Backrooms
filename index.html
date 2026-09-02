@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SkyPVP Arena - Ultimate Edition (HD Details & Fluid Controls)</title>
+    <title>SkyPVP Arena - HD Character Models with Limbs, Tubes, Antennas & Eyes</title>
     <style>
         body { margin: 0; overflow: hidden; background-color: #030712; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; user-select: none; }
         #menu {
@@ -73,7 +73,7 @@
 
     <div id="menu">
         <h1>SkyPVP Arena</h1>
-        <p>Ultra HD Visuals • Fluid Jetpack Mechanics • Seamless Bridges</p>
+        <p>Full 3D Character Customization with Limbs, Tubes, and Antennas</p>
         <div>
             <button class="btn" id="startBtn">Deploy Practice</button>
             <button class="btn btn-secondary" id="openCharScreenBtn">Character Wardrobe</button>
@@ -85,7 +85,7 @@
 
     <div id="charSelectScreen">
         <h2 style="color:#38bdf8; font-size: 40px; text-transform: uppercase; margin-bottom: 8px;">Select Operative</h2>
-        <p style="color:#94a3b8; margin-bottom: 25px;">Customized 3D Character Preview</p>
+        <p style="color:#94a3b8; margin-bottom: 25px;">Detailed 3D Character Preview with Limbs & Addons</p>
         
         <div class="preview-container" id="previewCanvasContainer"></div>
 
@@ -102,7 +102,7 @@
     <div id="hud">
         Health: <span id="healthDisplay" style="color:#f43f5e;">100 / 100</span><br>
         Score / Kills: <span id="scoreDisplay" style="color:#38bdf8;">0</span><br>
-        <span style="font-size:13px; color:#64748b;">WASD: Move | E: Sword | Q: Cannon | Shift: Hold to Fly Up (Release to Descend) | Click: Attack</span>
+        <span style="font-size:13px; color:#64748b;">WASD: Move | E: Sword | Q: Cannon | Shift: Hold to Fly Up | Click: Attack</span>
     </div>
 
     <div id="loadout-bar">
@@ -114,7 +114,7 @@
     <div id="crosshair"></div>
 
     <script>
-        // --- CHARACTER PREVIEW SETUP ---
+        // --- PREVIEW SCENE SETUP ---
         let previewScene, previewCamera, previewRenderer, previewModel;
         let selectedCharType = 'astronaut';
 
@@ -122,7 +122,7 @@
             const container = document.getElementById('previewCanvasContainer');
             previewScene = new THREE.Scene();
             previewCamera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 100);
-            previewCamera.position.set(0, 3.5, 6.0);
+            previewCamera.position.set(0, 3.5, 6.5);
             previewCamera.lookAt(0, 2, 0);
 
             previewRenderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
@@ -141,7 +141,7 @@
         function updatePreviewModel(type) {
             if (previewModel) previewScene.remove(previewModel);
             previewModel = createCharacterGeometry(type);
-            previewModel.position.set(0, 0.4, 0);
+            previewModel.position.set(0, 0.2, 0);
             previewScene.add(previewModel);
         }
 
@@ -248,7 +248,7 @@
             });
         }
 
-        // --- 3D SCENE SETUP (ULTRA HD GRAPHICS) ---
+        // --- 3D SCENE SETUP ---
         const scene = new THREE.Scene();
         scene.background = new THREE.Color(0x020617);
         scene.fog = new THREE.FogExp2(0x020617, 0.0035);
@@ -270,7 +270,7 @@
         sunLight.shadow.mapSize.height = 2048;
         scene.add(sunLight);
 
-        // --- HIGH-DETAIL ISLANDS & TEXTURED BRIDGES (NO WEIRD PILLARS) ---
+        // --- ISLANDS & BRIDGES ---
         const solidObjects = [];
         const islandData = [
             { x: 0, y: 10, z: 0, size: 40 },
@@ -281,7 +281,6 @@
         ];
 
         islandData.forEach(data => {
-            // Rugged multi-layered rock formations
             const rockGeo = new THREE.ConeGeometry(data.size, data.size * 0.9, 10);
             const rockMat = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.95, metalness: 0.1, flatShading: true });
             const rock = new THREE.Mesh(rockGeo, rockMat);
@@ -291,7 +290,6 @@
             rock.receiveShadow = true;
             scene.add(rock);
 
-            // Detailed Mossy Grass Top Layer
             const topGeo = new THREE.CylinderGeometry(data.size, data.size * 0.96, 3.5, 32);
             const topMat = new THREE.MeshStandardMaterial({ color: 0x15803d, roughness: 0.85 });
             const top = new THREE.Mesh(topGeo, topMat);
@@ -302,7 +300,6 @@
             solidObjects.push({ x: data.x, z: data.z, radius: data.size, y: data.y });
         });
 
-        // Connecting Stone Bridges
         const bridgeData = [
             { startX: 0, startZ: 0, endX: 80, endZ: 0 },
             { startX: 0, startZ: 0, endX: -80, endZ: 0 },
@@ -328,7 +325,7 @@
             bridgeColliders.push({ x1: Math.min(b.startX, b.endX) - 4.5, x2: Math.max(b.startX, b.endX) + 4.5, z1: Math.min(b.startZ, b.endZ) - 4.5, z2: Math.max(b.startZ, b.endZ) + 4.5, y: 10 });
         });
 
-        // --- FIRST-PERSON WEAPONS (NO VISIBLE HEAD/EYES) ---
+        // --- FIRST-PERSON WEAPONS (CLEAN 1ST PERSON - NO EYES/HEAD VISIBLE) ---
         const weaponGroup = new THREE.Group();
         camera.add(weaponGroup);
         scene.add(camera);
@@ -355,17 +352,22 @@
         }
         buildFirstPersonWeapons();
 
-        // --- 3D CHARACTER BUILDER (3RD PERSON MODEL FOR OTHER PLAYERS) ---
+        // --- 3D CHARACTER BUILDER WITH LIMBS, TUBES, ANTENNAS & EYES (VISIBLE ONLY TO OTHER/REMOTE PLAYERS OR PREVIEW) ---
         function createCharacterGeometry(type) {
             const group = new THREE.Group();
+
             if (type === 'astronaut') {
                 const suitMat = new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.3 });
                 const visorMat = new THREE.MeshStandardMaterial({ color: 0x38bdf8, metalness: 0.9, roughness: 0.1 });
-                
+                const limbMat = new THREE.MeshStandardMaterial({ color: 0xccbdc5, roughness: 0.4 });
+                const tubeMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.5 });
+
+                // Torso
                 const body = new THREE.Mesh(new THREE.SphereGeometry(1.0, 16, 16), suitMat);
                 body.position.y = 2.2;
                 group.add(body);
 
+                // Head & Visor
                 const head = new THREE.Mesh(new THREE.SphereGeometry(0.6, 16, 16), suitMat);
                 head.position.y = 3.6;
                 group.add(head);
@@ -373,28 +375,120 @@
                 const visor = new THREE.Mesh(new THREE.SphereGeometry(0.45, 16, 16), visorMat);
                 visor.position.set(0, 3.6, -0.3);
                 group.add(visor);
-            } else {
-                const alienMat = new THREE.MeshStandardMaterial({ color: 0x10b981, roughness: 0.3 });
-                const eyeMat = new THREE.MeshStandardMaterial({ color: 0x020617 });
 
+                // Limbs (Arms & Legs)
+                const armGeo = new THREE.CylinderGeometry(0.2, 0.2, 1.4, 12);
+                armGeo.rotateZ(Math.PI / 2);
+                
+                const armL = new THREE.Mesh(armGeo, limbMat);
+                armL.position.set(-1.2, 2.4, 0);
+                group.add(armL);
+
+                const armR = new THREE.Mesh(armGeo, limbMat);
+                armR.position.set(1.2, 2.4, 0);
+                group.add(armR);
+
+                const legGeo = new THREE.CylinderGeometry(0.22, 0.22, 1.5, 12);
+                const legL = new THREE.Mesh(legGeo, limbMat);
+                legL.position.set(-0.4, 0.9, 0);
+                group.add(legL);
+
+                const legR = new THREE.Mesh(legGeo, limbMat);
+                legR.position.set(0.4, 0.9, 0);
+                group.add(legR);
+
+                // Breathing Tubes / Addons connecting helmet to suit
+                const tubeGeo = new THREE.CylinderGeometry(0.06, 0.06, 0.9, 8);
+                const tubeL = new THREE.Mesh(tubeGeo, tubeMat);
+                tubeL.rotation.z = Math.PI / 6;
+                tubeL.position.set(-0.35, 3.0, -0.3);
+                group.add(tubeL);
+
+                const tubeR = new THREE.Mesh(tubeGeo, tubeMat);
+                tubeR.rotation.z = -Math.PI / 6;
+                tubeR.position.set(0.35, 3.0, -0.3);
+                group.add(tubeR);
+
+            } else {
+                // ALIEN CHARACTER WITH BIG BLACK EYES & ANTENNAS
+                const alienMat = new THREE.MeshStandardMaterial({ color: 0x10b981, roughness: 0.3 });
+                const bigEyeMat = new THREE.MeshStandardMaterial({ color: 0x000000, roughness: 0.05, metalness: 0.9 });
+                const limbMat = new THREE.MeshStandardMaterial({ color: 0x059669, roughness: 0.35 });
+                const antennaMat = new THREE.MeshStandardMaterial({ color: 0xf43f5e, emissive: 0xf43f5e, emissiveIntensity: 0.5 });
+
+                // Torso
                 const body = new THREE.Mesh(new THREE.SphereGeometry(0.9, 16, 16), alienMat);
                 body.position.y = 2.0;
                 group.add(body);
 
+                // Big Head
                 const head = new THREE.Mesh(new THREE.SphereGeometry(0.8, 16, 16), alienMat);
-                head.scale.set(1.2, 1.0, 1.2);
+                head.scale.set(1.25, 1.05, 1.25);
                 head.position.y = 3.5;
                 group.add(head);
 
-                const eyeL = new THREE.Mesh(new THREE.SphereGeometry(0.2, 12, 12), eyeMat);
-                eyeL.position.set(-0.35, 3.6, -0.6);
+                // Big Black Shiny Eyes
+                const eyeGeo = new THREE.SphereGeometry(0.3, 16, 16);
+                eyeGeo.scale(1.0, 1.4, 0.7);
+
+                const eyeL = new THREE.Mesh(eyeGeo, bigEyeMat);
+                eyeL.position.set(-0.4, 3.65, -0.6);
+                eyeL.rotation.y = -0.2;
                 group.add(eyeL);
 
-                const eyeR = new THREE.Mesh(new THREE.SphereGeometry(0.2, 12, 12), eyeMat);
-                eyeR.position.set(0.35, 3.6, -0.6);
+                const eyeR = new THREE.Mesh(eyeGeo, bigEyeMat);
+                eyeR.position.set(0.4, 3.65, -0.6);
+                eyeR.rotation.y = 0.2;
                 group.add(eyeR);
+
+                // Alien Antennas on Head
+                const antRod = new THREE.CylinderGeometry(0.04, 0.04, 0.8, 8);
+                const antTip = new THREE.SphereGeometry(0.12, 12, 12);
+
+                const antennaL = new THREE.Group();
+                const rodL = new THREE.Mesh(antRod, alienMat);
+                rodL.position.y = 0.4;
+                const tipL = new THREE.Mesh(antTip, antennaMat);
+                tipL.position.y = 0.8;
+                antennaL.add(rodL);
+                antennaL.add(tipL);
+                antennaL.position.set(-0.25, 4.2, -0.1);
+                antennaL.rotation.z = -0.2;
+                group.add(antennaL);
+
+                const antennaR = new THREE.Group();
+                const rodR = new THREE.Mesh(antRod, alienMat);
+                rodR.position.y = 0.4;
+                const tipR = new THREE.Mesh(antTip, antennaMat);
+                tipR.position.y = 0.8;
+                antennaR.add(rodR);
+                antennaR.add(tipR);
+                antennaR.position.set(0.25, 4.2, -0.1);
+                antennaR.rotation.z = 0.2;
+                group.add(antennaR);
+
+                // Limbs
+                const armGeo = new THREE.CylinderGeometry(0.16, 0.16, 1.3, 12);
+                armGeo.rotateZ(Math.PI / 2);
+                const armL = new THREE.Mesh(armGeo, limbMat);
+                armL.position.set(-1.1, 2.2, 0);
+                group.add(armL);
+
+                const armR = new THREE.Mesh(armGeo, limbMat);
+                armR.position.set(1.1, 2.2, 0);
+                group.add(armR);
+
+                const legGeo = new THREE.CylinderGeometry(0.18, 0.18, 1.4, 12);
+                const legL = new THREE.Mesh(legGeo, limbMat);
+                legL.position.set(-0.35, 0.8, 0);
+                group.add(legL);
+
+                const legR = new THREE.Mesh(legGeo, limbMat);
+                legR.position.set(0.35, 0.8, 0);
+                group.add(legR);
             }
 
+            // Jetpack Tank & Flames
             const jetpackMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, metalness: 0.6 });
             const jetpack = new THREE.Mesh(new THREE.BoxGeometry(0.9, 1.2, 0.5), jetpackMat);
             jetpack.position.set(0, 2.4, 0.5);
@@ -415,7 +509,9 @@
         let currentSlot = 1;
 
         function initPlayerModel(type) {
+            // Local player model is hidden in first-person view so you don't see your own head/eyes
             localPlayerModel = createCharacterGeometry(type);
+            localPlayerModel.visible = false; // Hidden locally in 1st person
             scene.add(localPlayerModel);
 
             if (isOnline && conn && conn.open) {
@@ -425,7 +521,7 @@
 
         function createRemotePlayerModel(type) {
             remotePlayer = createCharacterGeometry(type);
-            remotePlayer.visible = false;
+            remotePlayer.visible = false; // Becomes visible when data streams in
             scene.add(remotePlayer);
         }
 
@@ -468,7 +564,7 @@
             }
         });
 
-        // --- CONTROLS & FLUID JETPACK MECHANICS ---
+        // --- CONTROLS & JETPACK MECHANICS ---
         const controls = new THREE.PointerLockControls(camera, document.body);
         let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false, canJump = false, isJetpacking = false;
         let velocity = new THREE.Vector3();
@@ -529,19 +625,11 @@
                 velocity.x -= velocity.x * 10.0 * delta;
                 velocity.z -= velocity.z * 10.0 * delta;
 
-                // Jetpack behavior: Hold Shift to fly up, release to descend/fall
                 if (isJetpacking && currentSlot === 3) {
                     velocity.y += 32.0 * delta;
                     velocity.y = Math.min(velocity.y, 16);
-                    if (localPlayerModel && localPlayerModel.userData.flames) {
-                        localPlayerModel.userData.flames.visible = true;
-                        localPlayerModel.userData.flames.scale.set(1 + Math.random() * 0.4, 1 + Math.random() * 0.5, 1 + Math.random() * 0.4);
-                    }
                 } else {
-                    velocity.y -= 32.0 * delta; // Gravity pull when shift released
-                    if (localPlayerModel && localPlayerModel.userData.flames) {
-                        localPlayerModel.userData.flames.visible = false;
-                    }
+                    velocity.y -= 32.0 * delta;
                 }
 
                 direction.z = Number(moveForward) - Number(moveBackward);
