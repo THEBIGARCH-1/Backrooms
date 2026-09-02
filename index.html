@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BlockVerse - AI Object Spawner & Plot Sandbox</title>
+    <title>BlockVerse Pro - Sandbox with Free Mouse & Object Tools</title>
     <style>
         body { margin: 0; overflow: hidden; background-color: #87CEEB; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; user-select: none; }
         #menu {
@@ -26,29 +26,29 @@
             background: rgba(0,0,0,0.4); padding: 12px 20px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.2);
         }
         #spawn-ui {
-            position: absolute; top: 20px; right: 20px; background: rgba(0,0,0,0.7); padding: 15px;
-            border-radius: 14px; z-index: 10; backdrop-filter: blur(5px); display: flex; flex-direction: column; gap: 8px;
-            border: 1px solid rgba(255,255,255,0.3);
+            position: absolute; top: 20px; right: 20px; background: rgba(0,0,0,0.75); padding: 16px;
+            border-radius: 14px; z-index: 10; backdrop-filter: blur(5px); display: flex; flex-direction: column; gap: 10px;
+            border: 1px solid rgba(255,255,255,0.3); width: 260px;
         }
-        #spawnInput {
-            padding: 10px; font-size: 14px; border-radius: 8px; border: none; outline: none; width: 220px;
-            font-family: inherit; background: #fff; color: #333;
+        input[type="text"] {
+            padding: 10px; font-size: 14px; border-radius: 8px; border: none; outline: none;
+            font-family: inherit; background: #fff; color: #333; width: 100%; box-sizing: border-box;
         }
         .spawn-btn {
-            background: #00bcd4; color: #fff; border: none; padding: 8px 12px; border-radius: 8px;
+            background: #00bcd4; color: #fff; border: none; padding: 9px 12px; border-radius: 8px;
             font-weight: bold; cursor: pointer; transition: 0.2s; text-transform: uppercase; font-size: 13px;
         }
         .spawn-btn:hover { background: #00acc1; }
-        #toolbar {
+        #transform-bar {
             position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
-            display: flex; gap: 10px; background: rgba(0,0,0,0.6); padding: 12px 20px;
-            border-radius: 16px; z-index: 10; backdrop-filter: blur(5px);
+            display: flex; gap: 8px; background: rgba(0,0,0,0.7); padding: 12px 20px;
+            border-radius: 16px; z-index: 10; backdrop-filter: blur(5px); align-items: center; color: #fff; font-size: 14px;
         }
-        .tool-btn {
-            background: #333; color: #fff; border: 2px solid #555; padding: 10px 18px;
-            border-radius: 10px; cursor: pointer; font-weight: bold; font-size: 14px; transition: 0.2s;
+        .t-btn {
+            background: #333; color: #fff; border: 2px solid #555; padding: 8px 14px;
+            border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.2s;
         }
-        .tool-btn.active { background: #ff5722; border-color: #ffab91; box-shadow: 0 0 10px #ff5722; }
+        .t-btn:hover { background: #ff5722; border-color: #ffab91; }
         #crosshair {
             position: absolute; top: 50%; left: 50%; width: 8px; height: 8px;
             background-color: rgba(255, 255, 255, 0.8); border: 2px solid #000; border-radius: 50%;
@@ -62,8 +62,8 @@
 <body>
 
     <div id="menu">
-        <h1>BlockVerse</h1>
-        <p>Build plots, visit friends via Fast Pads, and use AI to spawn any object!</p>
+        <h1>BlockVerse Pro</h1>
+        <p>Press <b>V</b> to unlock/lock your mouse cursor! Search any shape, resize, rotate, and build!</p>
         <div>
             <button class="btn" id="startBtn">Enter Sandbox World</button>
             <button class="btn" id="hostOnlineBtn" style="background:#00bcd4;">Host Online Room</button>
@@ -73,22 +73,23 @@
     </div>
 
     <div id="hud">
-        Tool: <span id="currentToolName" style="color:#ffeb3b;">Cube Block</span><br>
-        Color: <span id="currentColorName" style="color:#ff5722;">Orange</span><br>
-        <span style="font-size:13px; color:#ccc;">Press 1-4 to switch shapes | B to cycle color</span>
+        Selected Object: <span id="selectedObjName" style="color:#00bcd4;">None</span><br>
+        <span style="font-size:13px; color:#ccc;">Press <b>V</b> to toggle mouse cursor. Click objects to transform!</span>
     </div>
 
     <div id="spawn-ui">
-        <label style="color:#fff; font-size:13px; font-weight:bold;">AI 3D Object Generator:</label>
-        <input type="text" id="spawnInput" placeholder="e.g. big blue house, racecar, tree...">
-        <button class="spawn-btn" onclick="spawnAIObjectPrompt()">Spawn Object</button>
+        <label style="color:#fff; font-size:13px; font-weight:bold;">Search Any Shape / Object:</label>
+        <input type="text" id="searchInput" placeholder="e.g. sphere, cylinder, house, tree...">
+        <button class="spawn-btn" onclick="spawnSearchedObject()">Search & Spawn</button>
     </div>
 
-    <div id="toolbar">
-        <button class="tool-btn active" onclick="setShape('cube')">1. Cube</button>
-        <button class="tool-btn" onclick="setShape('sphere')">2. Sphere</button>
-        <button class="tool-btn" onclick="setShape('ramp')">3. Ramp</button>
-        <button class="tool-btn" onclick="setShape('delete')">4. Delete Tool</button>
+    <div id="transform-bar">
+        <span><b>Transform:</b></span>
+        <button class="t-btn" onclick="transformSelected('scaleUp')">Scale +</button>
+        <button class="t-btn" onclick="transformSelected('scaleDown')">Scale -</button>
+        <button class="t-btn" onclick="transformSelected('rotate')">Rotate 45°</button>
+        <button class="t-btn" onclick="transformSelected('clone')" style="background:#4caf50;">Clone</button>
+        <button class="t-btn" onclick="transformSelected('delete')" style="background:#f44336;">Delete</button>
     </div>
 
     <div id="crosshair"></div>
@@ -98,7 +99,6 @@
         let peer, conn;
         let isHost = false;
         let myId = '';
-        const remotePlayers = {};
         let isOnline = false;
 
         const menu = document.getElementById('menu');
@@ -145,10 +145,8 @@
             conn.on('data', (data) => {
                 if (data.type === 'pos') {
                     updateRemotePlayer(data);
-                } else if (data.type === 'build') {
-                    spawnPlacedObject(data.x, data.y, data.z, data.shape, data.color, false);
-                } else if (data.type === 'ai_spawn') {
-                    createComplexCustomObject(data.query, data.x, data.y, data.z, false);
+                } else if (data.type === 'spawn') {
+                    createObjectInWorld(data.query, data.x, data.y, data.z, data.sx, data.sy, data.sz, data.rx, data.ry, data.rz, false);
                 }
             });
         }
@@ -174,23 +172,20 @@
         sunLight.castShadow = true;
         scene.add(sunLight);
 
-        // --- WORLD GENERATION: 6 LARGE PLOTS & FAST PADS ---
+        // --- 6 PLOTS & FAST PADS ---
         const plotsGroup = new THREE.Group();
         scene.add(plotsGroup);
 
         const plotSize = 70;
         const plotSpacing = 90;
         const plotPositions = [
-            { x: 0, z: 0, name: "Your Plot" },
-            { x: plotSpacing, z: 0, name: "Plot 2" },
-            { x: -plotSpacing, z: 0, name: "Plot 3" },
-            { x: 0, z: plotSpacing, name: "Plot 4" },
-            { x: plotSpacing, z: plotSpacing, name: "Plot 5" },
-            { x: -plotSpacing, z: plotSpacing, name: "Plot 6" },
+            { x: 0, z: 0 }, { x: plotSpacing, z: 0 }, { x: -plotSpacing, z: 0 },
+            { x: 0, z: plotSpacing }, { x: plotSpacing, z: plotSpacing }, { x: -plotSpacing, z: plotSpacing }
         ];
 
         const placedObjects = [];
         const fastPads = [];
+        let selectedObject = null;
 
         plotPositions.forEach((p, idx) => {
             const baseGeo = new THREE.BoxGeometry(plotSize, 1, plotSize);
@@ -198,11 +193,6 @@
             const plotBase = new THREE.Mesh(baseGeo, baseMat);
             plotBase.position.set(p.x, -0.5, p.z);
             plotsGroup.add(plotBase);
-
-            const borderMat = new THREE.MeshStandardMaterial({ color: 0x555 });
-            const fence = new THREE.Mesh(new THREE.BoxGeometry(plotSize, 0.5, 1), borderMat);
-            fence.position.set(p.x, 0.2, p.z - plotSize/2);
-            plotsGroup.add(fence);
 
             const padGeo = new THREE.CylinderGeometry(3, 3, 0.3, 32);
             const padMat = new THREE.MeshStandardMaterial({ color: 0x00bcd4, emissive: 0x00bcd4, emissiveIntensity: 0.6 });
@@ -255,112 +245,127 @@
             remotePlayer.rotation.y = data.ry;
         }
 
-        // --- AI OBJECT SPAWNER SYSTEM ---
-        function spawnAIObjectPrompt() {
-            const query = document.getElementById('spawnInput').value.trim();
+        // --- SEARCH, RESIZE, ROTATE & CLONE SYSTEM ---
+        function spawnSearchedObject() {
+            const query = document.getElementById('searchInput').value.trim();
             if (!query) return;
 
-            // Calculate spawn position directly in front of the player
             const dir = new THREE.Vector3();
             camera.getWorldDirection(dir);
             const spawnPos = camera.position.clone().add(dir.multiplyScalar(8));
-            spawnPos.y = Math.max(0, spawnPos.y);
+            spawnPos.y = Math.max(1, spawnPos.y);
 
-            createComplexCustomObject(query, spawnPos.x, spawnPos.y, spawnPos.z, true);
-            document.getElementById('spawnInput').value = '';
+            createObjectInWorld(query, spawnPos.x, spawnPos.y, spawnPos.z, 1, 1, 1, 0, 0, 0, true);
+            document.getElementById('searchInput').value = '';
         }
 
-        function createComplexCustomObject(query, x, y, z, sendNetwork) {
+        function createObjectInWorld(query, x, y, z, sx, sy, sz, rx, ry, rz, sendNetwork) {
             const group = new THREE.Group();
             const lowerQuery = query.toLowerCase();
 
-            // Smart procedural generator based on descriptive search keywords
-            let mainColor = 0xff5722;
-            if (lowerQuery.includes('blue')) mainColor = 0x2196f3;
-            else if (lowerQuery.includes('red')) mainColor = 0xf44336;
-            else if (lowerQuery.includes('green')) mainColor = 0x4caf50;
-            else if (lowerQuery.includes('yellow')) mainColor = 0xffeb3b;
-            else if (lowerQuery.includes('pink')) mainColor = 0xe91e63;
-            else if (lowerQuery.includes('purple')) mainColor = 0x9c27b0;
-            else if (lowerQuery.includes('white')) mainColor = 0xffffff;
+            let color = 0xff5722;
+            if (lowerQuery.includes('blue')) color = 0x2196f3;
+            else if (lowerQuery.includes('red')) color = 0xf44336;
+            else if (lowerQuery.includes('green')) color = 0x4caf50;
+            else if (lowerQuery.includes('yellow')) color = 0xffeb3b;
+            else if (lowerQuery.includes('pink')) color = 0xe91e63;
+            else if (lowerQuery.includes('white')) color = 0xffffff;
 
-            const mat = new THREE.MeshStandardMaterial({ color: mainColor, roughness: 0.3 });
-            const secondaryMat = new THREE.MeshStandardMaterial({ color: 0x333333, roughness: 0.5 });
+            const mat = new THREE.MeshStandardMaterial({ color: color, roughness: 0.3 });
 
-            if (lowerQuery.includes('house') || lowerQuery.includes('home') || lowerQuery.includes('building')) {
-                // House Structure
-                const base = new THREE.Mesh(new THREE.BoxGeometry(6, 4, 6), mat);
-                base.position.y = 2;
-                group.add(base);
-                const roof = new THREE.Mesh(new THREE.ConeGeometry(5, 3, 4), new THREE.MeshStandardMaterial({ color: 0x8b0000 }));
-                roof.position.y = 5.5;
-                roof.rotation.y = Math.PI / 4;
-                group.add(roof);
-            } else if (lowerQuery.includes('car') || lowerQuery.includes('racecar') || lowerQuery.includes('vehicle')) {
-                // Car Structure
-                const carBody = new THREE.Mesh(new THREE.BoxGeometry(3, 1.2, 6), mat);
-                carBody.position.y = 1;
-                group.add(carBody);
-                const cabin = new THREE.Mesh(new THREE.BoxGeometry(2.2, 1, 3), new THREE.MeshStandardMaterial({ color: 0x111111 }));
-                cabin.position.set(0, 2, -0.5);
-                group.add(cabin);
-            } else if (lowerQuery.includes('tree') || lowerQuery.includes('plant')) {
-                // Tree Structure
-                const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.7, 4, 8), new THREE.MeshStandardMaterial({ color: 0x8b5a2b }));
-                trunk.position.y = 2;
-                group.add(trunk);
-                const leaves = new THREE.Mesh(new THREE.SphereGeometry(2.5, 12, 12), new THREE.MeshStandardMaterial({ color: 0x2e8b57 }));
-                leaves.position.y = 5;
-                group.add(leaves);
+            let mesh;
+            if (lowerQuery.includes('sphere') || lowerQuery.includes('ball')) {
+                mesh = new THREE.Mesh(new THREE.SphereGeometry(1.5, 24, 24), mat);
+            } else if (lowerQuery.includes('cylinder') || lowerQuery.includes('pillar') || lowerQuery.includes('tube')) {
+                mesh = new THREE.Mesh(new THREE.CylinderGeometry(1, 1, 3, 24), mat);
+            } else if (lowerQuery.includes('cone') || lowerQuery.includes('pyramid')) {
+                mesh = new THREE.Mesh(new THREE.ConeGeometry(1.5, 3, 16), mat);
+            } else if (lowerQuery.includes('house') || lowerQuery.includes('building')) {
+                mesh = new THREE.Mesh(new THREE.BoxGeometry(4, 3, 4), mat);
             } else {
-                // Generic intricate custom shape representation for any custom idea
-                const centerPiece = new THREE.Mesh(new THREE.BoxGeometry(3, 3, 3), mat);
-                centerPiece.position.y = 1.5;
-                group.add(centerPiece);
-                const topPiece = new THREE.Mesh(new THREE.SphereGeometry(1.5, 16, 16), secondaryMat);
-                topPiece.position.y = 3.5;
-                group.add(topPiece);
+                mesh = new THREE.Mesh(new THREE.BoxGeometry(2, 2, 2), mat);
             }
 
+            mesh.position.y = 1;
+            group.add(mesh);
             group.position.set(x, y, z);
+            group.scale.set(sx, sy, sz);
+            group.rotation.set(rx, ry, rz);
+            group.userData = { query: query };
+
             scene.add(group);
             placedObjects.push(group);
+            selectObject(group);
 
             if (sendNetwork && isOnline && conn && conn.open) {
-                conn.send({ type: 'ai_spawn', query: query, x: x, y: y, z: z });
+                conn.send({ type: 'spawn', query: query, x: x, y: y, z: z, sx: sx, sy: sy, sz: sz, rx: rx, ry: ry, rz: rz });
             }
         }
 
-        // --- BUILDING & PLACING SYSTEM ---
-        let currentShape = 'cube';
-        let currentColorIndex = 0;
-        const colors = [0xff5722, 0x4caf50, 0x2196f3, 0xffeb3b, 0x9c27b0, 0xffffff, 0x333333];
-        const colorNames = ['Orange', 'Green', 'Blue', 'Yellow', 'Purple', 'White', 'Dark'];
-
-        function setShape(shape) {
-            currentShape = shape;
-            document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
-            if(shape === 'cube') document.querySelectorAll('.tool-btn')[0].classList.add('active');
-            if(shape === 'sphere') document.querySelectorAll('.tool-btn')[1].classList.add('active');
-            if(shape === 'ramp') document.querySelectorAll('.tool-btn')[2].classList.add('active');
-            if(shape === 'delete') document.querySelectorAll('.tool-btn')[3].classList.add('active');
-            document.getElementById('currentToolName').innerText = shape.toUpperCase();
+        function selectObject(obj) {
+            selectedObject = obj;
+            document.getElementById('selectedObjName').innerText = obj.userData.query ? obj.userData.query.toUpperCase() : 'Custom Object';
         }
+
+        function transformSelected(action) {
+            if (!selectedObject) return;
+
+            if (action === 'scaleUp') {
+                selectedObject.scale.multiplyScalar(1.25);
+            } else if (action === 'scaleDown') {
+                selectedObject.scale.divideScalar(1.25);
+            } else if (action === 'rotate') {
+                selectedObject.rotation.y += Math.PI / 4;
+            } else if (action === 'clone') {
+                const clone = selectedObject.clone();
+                clone.position.add(new THREE.Vector3(3, 0, 3));
+                scene.add(clone);
+                placedObjects.push(clone);
+                selectObject(clone);
+            } else if (action === 'delete') {
+                scene.remove(selectedObject);
+                const idx = placedObjects.indexOf(selectedObject);
+                if (idx > -1) placedObjects.splice(idx, 1);
+                selectedObject = null;
+                document.getElementById('selectedObjName').innerText = 'None';
+            }
+        }
+
+        // --- MOUSE & TOGGLE CONTROLS (Press V to Unlock/Lock Mouse) ---
+        const controls = new THREE.PointerLockControls(camera, document.body);
+        let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false, canJump = false;
+        let velocity = new THREE.Vector3();
+        let direction = new THREE.Vector3();
+        let animTimer = 0;
 
         document.addEventListener('keydown', (e) => {
-            if (e.code === 'Digit1') setShape('cube');
-            if (e.code === 'Digit2') setShape('sphere');
-            if (e.code === 'Digit3') setShape('ramp');
-            if (e.code === 'Digit4') setShape('delete');
-            if (e.code === 'KeyB') {
-                currentColorIndex = (currentColorIndex + 1) % colors.length;
-                document.getElementById('currentColorName').innerText = colorNames[currentColorIndex];
+            // Toggle mouse lock with 'V'
+            if (e.code === 'KeyV') {
+                if (controls.isLocked) {
+                    controls.unlock();
+                } else {
+                    controls.lock();
+                }
+                return;
             }
+
+            if (!controls.isLocked) return;
+            if (e.code === 'KeyW') moveForward = true;
+            if (e.code === 'KeyS') moveBackward = true;
+            if (e.code === 'KeyA') moveLeft = true;
+            if (e.code === 'KeyD') moveRight = true;
+            if (e.code === 'Space' && canJump) { velocity.y += 10; canJump = false; }
+        });
+
+        document.addEventListener('keyup', (e) => {
+            if (e.code === 'KeyW') moveForward = false;
+            if (e.code === 'KeyS') moveBackward = false;
+            if (e.code === 'KeyA') moveLeft = false;
+            if (e.code === 'KeyD') moveRight = false;
         });
 
         window.addEventListener('mousedown', (e) => {
             if (!controls.isLocked) return;
-            // Prevent placing when typing or clicking spawn UI
             if (e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON') return;
 
             const raycaster = new THREE.Raycaster();
@@ -369,62 +374,14 @@
 
             if (intersects.length > 0) {
                 const hit = intersects[0];
-
-                if (currentShape === 'delete') {
-                    if (hit.object && !fastPads.includes(hit.object)) {
-                        // Find top group/object to remove
-                        let rootObj = hit.object;
-                        while (rootObj.parent && rootObj.parent !== scene) {
-                            rootObj = rootObj.parent;
-                        }
-                        scene.remove(rootObj);
-                        const idx = placedObjects.indexOf(rootObj);
-                        if (idx > -1) placedObjects.splice(idx, 1);
-                    }
-                } else {
-                    const pos = hit.point.clone().add(hit.face.normal.clone().multiplyScalar(1.5));
-                    spawnPlacedObject(pos.x, Math.max(0, pos.y), pos.z, currentShape, colors[currentColorIndex], true);
+                let rootObj = hit.object;
+                while (rootObj.parent && rootObj.parent !== scene) {
+                    rootObj = rootObj.parent;
+                }
+                if (placedObjects.includes(rootObj)) {
+                    selectObject(rootObj);
                 }
             }
-        });
-
-        function spawnPlacedObject(x, y, z, shape, colorHex, sendNetwork) {
-            let geo;
-            if (shape === 'cube') geo = new THREE.BoxGeometry(2, 2, 2);
-            else if (shape === 'sphere') geo = new THREE.SphereGeometry(1.2, 16, 16);
-            else if (shape === 'ramp') geo = new THREE.BoxGeometry(2, 2, 2);
-
-            const mat = new THREE.MeshStandardMaterial({ color: colorHex, roughness: 0.3 });
-            const obj = new THREE.Mesh(geo, mat);
-            obj.position.set(Math.round(x), Math.round(y), Math.round(z));
-            scene.add(obj);
-            placedObjects.push(obj);
-
-            if (sendNetwork && isOnline && conn && conn.open) {
-                conn.send({ type: 'build', x: obj.position.x, y: obj.position.y, z: obj.position.z, shape: shape, color: colorHex });
-            }
-        }
-
-        // --- CONTROLS & MOVEMENT ---
-        const controls = new THREE.PointerLockControls(camera, document.body);
-        let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false, canJump = false;
-        let velocity = new THREE.Vector3();
-        let direction = new THREE.Vector3();
-        let animTimer = 0;
-
-        document.addEventListener('keydown', (e) => {
-            if (!controls.isLocked) return;
-            if (e.code === 'KeyW') moveForward = true;
-            if (e.code === 'KeyS') moveBackward = true;
-            if (e.code === 'KeyA') moveLeft = true;
-            if (e.code === 'KeyD') moveRight = true;
-            if (e.code === 'Space' && canJump) { velocity.y += 10; canJump = false; }
-        });
-        document.addEventListener('keyup', (e) => {
-            if (e.code === 'KeyW') moveForward = false;
-            if (e.code === 'KeyS') moveBackward = false;
-            if (e.code === 'KeyA') moveLeft = false;
-            if (e.code === 'KeyD') moveRight = false;
         });
 
         // --- GAME LOOP ---
