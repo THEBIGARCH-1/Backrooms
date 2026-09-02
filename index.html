@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SkyPVP Arena - Host/Join Code Lobby & Match Start Countdown</title>
+    <title>SkyPVP Arena - Instant Hosted Multiplayer & Code Lobbies</title>
     <style>
         body { margin: 0; overflow: hidden; background-color: #030712; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; user-select: none; }
         
@@ -59,12 +59,10 @@
             display: none; text-align: right;
         }
         
-        /* Host Start Match Button Overlay inside Arena */
         #hostControlsOverlay {
             position: absolute; bottom: 100px; right: 20px; z-index: 15; display: none;
         }
 
-        /* Countdown Overlay */
         #countdownOverlay {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             display: none; justify-content: center; align-items: center;
@@ -105,7 +103,7 @@
 
     <div id="menu">
         <h1>SkyPVP Arena</h1>
-        <p>Host Custom Lobbies, Enter Codes & Battle with Friends</p>
+        <p>Instant Peer Hosting & Quick Lobbies</p>
         <div>
             <button class="btn" id="startPracticeBtn">Solo Practice</button>
             <button class="btn btn-secondary" id="openCharScreenBtn">Character Wardrobe</button>
@@ -216,7 +214,7 @@
             document.getElementById('menu').style.display = 'flex';
         }
 
-        // --- MULTIPLAYER & MATCH MANAGEMENT SETUP ---
+        // --- INSTANT MULTIPLAYER & MATCH MANAGEMENT SETUP ---
         let peer, conn;
         let isHost = false;
         let myId = '';
@@ -230,7 +228,6 @@
         const connectionStatus = document.getElementById('connectionStatus');
         const hostControlsOverlay = document.getElementById('hostControlsOverlay');
 
-        // Solo Practice
         document.getElementById('startPracticeBtn').addEventListener('click', () => {
             menu.style.display = 'none';
             roomCodeDisplay.style.display = 'none';
@@ -239,28 +236,47 @@
             controls.lock();
         });
 
-        // Host Multiplayer Lobby
+        // Fast Host Creation using explicit lightweight short random ID to eliminate long delays
         document.getElementById('hostOnlineBtn').addEventListener('click', () => {
             isOnline = true;
             isHost = true;
-            peer = new Peer();
-            
-            statusMsg.innerHTML = "Initializing host server...";
+            statusMsg.innerHTML = "Opening fast server lobby...";
+
+            // Create a short custom readable code to avoid long random connection lookups
+            const shortCode = 'sky-' + Math.floor(100 + Math.random() * 900);
+            peer = new Peer(shortCode);
+
             peer.on('open', (id) => {
                 myId = id;
                 codeText.innerText = id;
                 roomCodeDisplay.style.display = 'block';
-                statusMsg.innerHTML = `Lobby hosted! Code generated. Enter game lobby...`;
-                
-                // Immediately enter the arena lobby as host
+                statusMsg.innerHTML = `Lobby Ready! Code: <b>${id}</b>`;
+
                 setTimeout(() => {
                     menu.style.display = 'none';
                     initPlayerModel(selectedCharType);
-                    // Place host on Center Island
                     camera.position.set(0, 15, 0);
                     controls.lock();
-                    hostControlsOverlay.style.display = 'block'; // Show Host Start Match button
-                }, 1000);
+                    hostControlsOverlay.style.display = 'block';
+                }, 400);
+            });
+
+            peer.on('error', (err) => {
+                // Fallback to auto-generated ID if short code is taken
+                peer = new Peer();
+                peer.on('open', (autoId) => {
+                    myId = autoId;
+                    codeText.innerText = autoId;
+                    roomCodeDisplay.style.display = 'block';
+                    statusMsg.innerHTML = `Lobby Ready! Code: <b>${autoId}</b>`;
+                    setTimeout(() => {
+                        menu.style.display = 'none';
+                        initPlayerModel(selectedCharType);
+                        camera.position.set(0, 15, 0);
+                        controls.lock();
+                        hostControlsOverlay.style.display = 'block';
+                    }, 400);
+                });
             });
 
             peer.on('connection', (connection) => {
@@ -271,16 +287,15 @@
             });
         });
 
-        // Join Lobby via Code
         document.getElementById('joinOnlineBtn').addEventListener('click', () => {
-            const friendCode = prompt("Enter Host Lobby Code:");
+            const friendCode = prompt("Enter Host Lobby Code (e.g. sky-123):");
             if (!friendCode) return;
             
             isOnline = true;
             isHost = false;
             peer = new Peer();
             
-            statusMsg.innerHTML = "Connecting to lobby...";
+            statusMsg.innerHTML = "Connecting instantly...";
             peer.on('open', (id) => {
                 myId = id;
                 conn = peer.connect(friendCode.trim());
@@ -293,10 +308,9 @@
                 setTimeout(() => {
                     menu.style.display = 'none';
                     initPlayerModel(selectedCharType);
-                    // Place guest on a separate distant island initially
                     camera.position.set(80, 15, 0);
                     controls.lock();
-                }, 1000);
+                }, 400);
             });
         });
 
@@ -332,7 +346,6 @@
             });
         }
 
-        // Host clicks Start Match -> Triggers countdown and reloads players to separate islands
         document.getElementById('hostStartMatchBtn').addEventListener('click', () => {
             triggerCountdownSequence();
             if (isOnline && conn && conn.open) {
@@ -345,11 +358,10 @@
             const numEl = document.getElementById('countdownNumber');
             overlay.style.display = 'flex';
 
-            // Teleport and reload positions to separate islands
             if (isHost) {
-                camera.position.set(0, 15, 0); // Host on Center Island
+                camera.position.set(0, 15, 0);
             } else {
-                camera.position.set(80, 15, 0); // Guest on East Island
+                camera.position.set(80, 15, 0);
             }
             velocity.set(0, 0, 0);
 
@@ -473,7 +485,7 @@
         }
         buildFirstPersonWeapons();
 
-        // --- 3D CHARACTER BUILDER (LIMBS, TUBES, ANTENNAS & EYES) ---
+        // --- 3D CHARACTER BUILDER ---
         function createCharacterGeometry(type) {
             const group = new THREE.Group();
 
@@ -620,7 +632,7 @@
 
         function initPlayerModel(type) {
             localPlayerModel = createCharacterGeometry(type);
-            localPlayerModel.visible = false; // Hidden locally in 1st person
+            localPlayerModel.visible = false;
             scene.add(localPlayerModel);
 
             if (isOnline && conn && conn.open) {
