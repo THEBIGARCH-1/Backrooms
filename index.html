@@ -3,9 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SkyPVP Arena - HD Character Models with Limbs, Tubes, Antennas & Eyes</title>
+    <title>SkyPVP Arena - Host/Join Code Lobby & Match Start Countdown</title>
     <style>
         body { margin: 0; overflow: hidden; background-color: #030712; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; user-select: none; }
+        
         #menu {
             position: absolute; width: 100%; height: 100%;
             background: linear-gradient(135deg, #020617, #0f172a, #1e1b4b);
@@ -41,13 +42,44 @@
         .btn:hover { background: #fb7185; transform: scale(1.05); }
         .btn-secondary { background: #0ea5e9; box-shadow: 0 6px 25px rgba(14,165,233,0.5); }
         .btn-secondary:hover { background: #38bdf8; }
+        .btn-host { background: #8b5cf6; box-shadow: 0 6px 25px rgba(139,92,246,0.5); }
+        .btn-host:hover { background: #a78bfa; }
 
+        /* HUD & Top-Right Room Code Overlay */
         #hud {
             position: absolute; top: 20px; left: 20px; color: #fff; font-size: 18px;
             font-weight: bold; pointer-events: none; z-index: 10; text-shadow: 0 2px 6px rgba(0,0,0,0.9);
             background: rgba(15,23,42,0.8); padding: 16px 24px; border-radius: 16px; border: 1px solid rgba(56,189,248,0.3);
             backdrop-filter: blur(8px);
         }
+        #roomCodeDisplay {
+            position: absolute; top: 20px; right: 20px; color: #38bdf8; font-size: 16px;
+            font-weight: bold; z-index: 10; background: rgba(15,23,42,0.85); padding: 10px 18px;
+            border-radius: 12px; border: 1px solid rgba(56,189,248,0.4); backdrop-filter: blur(8px);
+            display: none; text-align: right;
+        }
+        
+        /* Host Start Match Button Overlay inside Arena */
+        #hostControlsOverlay {
+            position: absolute; bottom: 100px; right: 20px; z-index: 15; display: none;
+        }
+
+        /* Countdown Overlay */
+        #countdownOverlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            display: none; justify-content: center; align-items: center;
+            background: rgba(2, 6, 23, 0.6); z-index: 50; pointer-events: none;
+        }
+        #countdownNumber {
+            font-size: 120px; font-weight: 900; color: #38bdf8;
+            text-shadow: 0 0 50px rgba(56,189,248,0.8);
+            animation: pulseNum 1s infinite alternate;
+        }
+        @keyframes pulseNum {
+            0% { transform: scale(1); opacity: 0.8; }
+            100% { transform: scale(1.15); opacity: 1; }
+        }
+
         #loadout-bar {
             position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
             display: flex; gap: 14px; background: rgba(15,23,42,0.85); padding: 14px 28px;
@@ -73,14 +105,14 @@
 
     <div id="menu">
         <h1>SkyPVP Arena</h1>
-        <p>Full 3D Character Customization with Limbs, Tubes, and Antennas</p>
+        <p>Host Custom Lobbies, Enter Codes & Battle with Friends</p>
         <div>
-            <button class="btn" id="startBtn">Deploy Practice</button>
+            <button class="btn" id="startPracticeBtn">Solo Practice</button>
             <button class="btn btn-secondary" id="openCharScreenBtn">Character Wardrobe</button>
-            <button class="btn btn-secondary" id="hostOnlineBtn" style="background:#8b5cf6;">Host Multiplayer</button>
-            <button class="btn" id="joinOnlineBtn" style="background:#ec4899;">Join Multiplayer</button>
+            <button class="btn btn-host" id="hostOnlineBtn">Host Multiplayer</button>
+            <button class="btn" id="joinOnlineBtn" style="background:#ec4899;">Join Lobby</button>
         </div>
-        <div id="roomInfo" style="margin-top: 18px; font-size: 17px; color: #38bdf8;"></div>
+        <div id="statusMsg" style="margin-top: 18px; font-size: 17px; color: #38bdf8;"></div>
     </div>
 
     <div id="charSelectScreen">
@@ -103,6 +135,19 @@
         Health: <span id="healthDisplay" style="color:#f43f5e;">100 / 100</span><br>
         Score / Kills: <span id="scoreDisplay" style="color:#38bdf8;">0</span><br>
         <span style="font-size:13px; color:#64748b;">WASD: Move | E: Sword | Q: Cannon | Shift: Hold to Fly Up | Click: Attack</span>
+    </div>
+
+    <div id="roomCodeDisplay">
+        Room Code: <span id="codeText" style="color:#fff; font-family:monospace;">---</span><br>
+        <span id="connectionStatus" style="font-size:12px; color:#94a3b8;">Waiting for player...</span>
+    </div>
+
+    <div id="hostControlsOverlay">
+        <button class="btn btn-host" id="hostStartMatchBtn">Start Match (Countdown)</button>
+    </div>
+
+    <div id="countdownOverlay">
+        <div id="countdownNumber">3</div>
     </div>
 
     <div id="loadout-bar">
@@ -171,7 +216,7 @@
             document.getElementById('menu').style.display = 'flex';
         }
 
-        // --- MULTIPLAYER SETUP ---
+        // --- MULTIPLAYER & MATCH MANAGEMENT SETUP ---
         let peer, conn;
         let isHost = false;
         let myId = '';
@@ -179,49 +224,86 @@
         let remotePlayer;
 
         const menu = document.getElementById('menu');
-        const roomInfo = document.getElementById('roomInfo');
+        const statusMsg = document.getElementById('statusMsg');
+        const roomCodeDisplay = document.getElementById('roomCodeDisplay');
+        const codeText = document.getElementById('codeText');
+        const connectionStatus = document.getElementById('connectionStatus');
+        const hostControlsOverlay = document.getElementById('hostControlsOverlay');
 
-        document.getElementById('startBtn').addEventListener('click', () => {
+        // Solo Practice
+        document.getElementById('startPracticeBtn').addEventListener('click', () => {
             menu.style.display = 'none';
+            roomCodeDisplay.style.display = 'none';
             initPlayerModel(selectedCharType);
+            camera.position.set(0, 15, 0);
             controls.lock();
         });
 
+        // Host Multiplayer Lobby
         document.getElementById('hostOnlineBtn').addEventListener('click', () => {
             isOnline = true;
+            isHost = true;
             peer = new Peer();
+            
+            statusMsg.innerHTML = "Initializing host server...";
             peer.on('open', (id) => {
                 myId = id;
-                isHost = true;
-                roomInfo.innerHTML = `Arena Match Code: <b>${id}</b><br>Share with your friend! Waiting...`;
+                codeText.innerText = id;
+                roomCodeDisplay.style.display = 'block';
+                statusMsg.innerHTML = `Lobby hosted! Code generated. Enter game lobby...`;
+                
+                // Immediately enter the arena lobby as host
+                setTimeout(() => {
+                    menu.style.display = 'none';
+                    initPlayerModel(selectedCharType);
+                    // Place host on Center Island
+                    camera.position.set(0, 15, 0);
+                    controls.lock();
+                    hostControlsOverlay.style.display = 'block'; // Show Host Start Match button
+                }, 1000);
             });
+
             peer.on('connection', (connection) => {
                 conn = connection;
                 setupConnection();
-                menu.style.display = 'none';
-                initPlayerModel(selectedCharType);
-                controls.lock();
+                connectionStatus.innerText = "Player Connected!";
+                connectionStatus.style.color = "#38bdf8";
             });
         });
 
+        // Join Lobby via Code
         document.getElementById('joinOnlineBtn').addEventListener('click', () => {
+            const friendCode = prompt("Enter Host Lobby Code:");
+            if (!friendCode) return;
+            
             isOnline = true;
-            const friendId = prompt("Enter Arena Match Code:");
-            if (!friendId) return;
+            isHost = false;
             peer = new Peer();
+            
+            statusMsg.innerHTML = "Connecting to lobby...";
             peer.on('open', (id) => {
                 myId = id;
-                isHost = false;
-                conn = peer.connect(friendId);
+                conn = peer.connect(friendCode.trim());
                 setupConnection();
-                menu.style.display = 'none';
-                initPlayerModel(selectedCharType);
-                controls.lock();
+                
+                codeText.innerText = friendCode.trim();
+                roomCodeDisplay.style.display = 'block';
+                connectionStatus.innerText = "Connected to Host!";
+
+                setTimeout(() => {
+                    menu.style.display = 'none';
+                    initPlayerModel(selectedCharType);
+                    // Place guest on a separate distant island initially
+                    camera.position.set(80, 15, 0);
+                    controls.lock();
+                }, 1000);
             });
         });
 
         function setupConnection() {
-            conn.on('open', () => { roomInfo.innerHTML = "Connected to Arena match!"; });
+            conn.on('open', () => {
+                connectionStatus.innerText = "Active Connection!";
+            });
             conn.on('data', (data) => {
                 if (data.type === 'pos') {
                     if (remotePlayer) {
@@ -238,14 +320,53 @@
                     playerHealth = Math.max(0, playerHealth - data.amount);
                     document.getElementById('healthDisplay').innerText = `${playerHealth} / 100`;
                     if (playerHealth <= 0) {
-                        alert("You were defeated! Respawning at Center Island...");
+                        alert("You were defeated!");
                         playerHealth = 100;
-                        camera.position.set(0, 15, 0);
+                        camera.position.set(isHost ? 0 : 80, 15, 0);
                     }
                 } else if (data.type === 'initChar') {
                     createRemotePlayerModel(data.charType);
+                } else if (data.type === 'startMatch') {
+                    triggerCountdownSequence();
                 }
             });
+        }
+
+        // Host clicks Start Match -> Triggers countdown and reloads players to separate islands
+        document.getElementById('hostStartMatchBtn').addEventListener('click', () => {
+            triggerCountdownSequence();
+            if (isOnline && conn && conn.open) {
+                conn.send({ type: 'startMatch' });
+            }
+        });
+
+        function triggerCountdownSequence() {
+            const overlay = document.getElementById('countdownOverlay');
+            const numEl = document.getElementById('countdownNumber');
+            overlay.style.display = 'flex';
+
+            // Teleport and reload positions to separate islands
+            if (isHost) {
+                camera.position.set(0, 15, 0); // Host on Center Island
+            } else {
+                camera.position.set(80, 15, 0); // Guest on East Island
+            }
+            velocity.set(0, 0, 0);
+
+            let count = 3;
+            numEl.innerText = count;
+
+            let timer = setInterval(() => {
+                count--;
+                if (count > 0) {
+                    numEl.innerText = count;
+                } else if (count === 0) {
+                    numEl.innerText = "FIGHT!";
+                } else {
+                    clearInterval(timer);
+                    overlay.style.display = 'none';
+                }
+            }, 1000);
         }
 
         // --- 3D SCENE SETUP ---
@@ -325,7 +446,7 @@
             bridgeColliders.push({ x1: Math.min(b.startX, b.endX) - 4.5, x2: Math.max(b.startX, b.endX) + 4.5, z1: Math.min(b.startZ, b.endZ) - 4.5, z2: Math.max(b.startZ, b.endZ) + 4.5, y: 10 });
         });
 
-        // --- FIRST-PERSON WEAPONS (CLEAN 1ST PERSON - NO EYES/HEAD VISIBLE) ---
+        // --- FIRST-PERSON WEAPONS ---
         const weaponGroup = new THREE.Group();
         camera.add(weaponGroup);
         scene.add(camera);
@@ -352,7 +473,7 @@
         }
         buildFirstPersonWeapons();
 
-        // --- 3D CHARACTER BUILDER WITH LIMBS, TUBES, ANTENNAS & EYES (VISIBLE ONLY TO OTHER/REMOTE PLAYERS OR PREVIEW) ---
+        // --- 3D CHARACTER BUILDER (LIMBS, TUBES, ANTENNAS & EYES) ---
         function createCharacterGeometry(type) {
             const group = new THREE.Group();
 
@@ -362,12 +483,10 @@
                 const limbMat = new THREE.MeshStandardMaterial({ color: 0xccbdc5, roughness: 0.4 });
                 const tubeMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.5 });
 
-                // Torso
                 const body = new THREE.Mesh(new THREE.SphereGeometry(1.0, 16, 16), suitMat);
                 body.position.y = 2.2;
                 group.add(body);
 
-                // Head & Visor
                 const head = new THREE.Mesh(new THREE.SphereGeometry(0.6, 16, 16), suitMat);
                 head.position.y = 3.6;
                 group.add(head);
@@ -376,7 +495,6 @@
                 visor.position.set(0, 3.6, -0.3);
                 group.add(visor);
 
-                // Limbs (Arms & Legs)
                 const armGeo = new THREE.CylinderGeometry(0.2, 0.2, 1.4, 12);
                 armGeo.rotateZ(Math.PI / 2);
                 
@@ -397,7 +515,6 @@
                 legR.position.set(0.4, 0.9, 0);
                 group.add(legR);
 
-                // Breathing Tubes / Addons connecting helmet to suit
                 const tubeGeo = new THREE.CylinderGeometry(0.06, 0.06, 0.9, 8);
                 const tubeL = new THREE.Mesh(tubeGeo, tubeMat);
                 tubeL.rotation.z = Math.PI / 6;
@@ -410,24 +527,20 @@
                 group.add(tubeR);
 
             } else {
-                // ALIEN CHARACTER WITH BIG BLACK EYES & ANTENNAS
                 const alienMat = new THREE.MeshStandardMaterial({ color: 0x10b981, roughness: 0.3 });
                 const bigEyeMat = new THREE.MeshStandardMaterial({ color: 0x000000, roughness: 0.05, metalness: 0.9 });
                 const limbMat = new THREE.MeshStandardMaterial({ color: 0x059669, roughness: 0.35 });
                 const antennaMat = new THREE.MeshStandardMaterial({ color: 0xf43f5e, emissive: 0xf43f5e, emissiveIntensity: 0.5 });
 
-                // Torso
                 const body = new THREE.Mesh(new THREE.SphereGeometry(0.9, 16, 16), alienMat);
                 body.position.y = 2.0;
                 group.add(body);
 
-                // Big Head
                 const head = new THREE.Mesh(new THREE.SphereGeometry(0.8, 16, 16), alienMat);
                 head.scale.set(1.25, 1.05, 1.25);
                 head.position.y = 3.5;
                 group.add(head);
 
-                // Big Black Shiny Eyes
                 const eyeGeo = new THREE.SphereGeometry(0.3, 16, 16);
                 eyeGeo.scale(1.0, 1.4, 0.7);
 
@@ -441,7 +554,6 @@
                 eyeR.rotation.y = 0.2;
                 group.add(eyeR);
 
-                // Alien Antennas on Head
                 const antRod = new THREE.CylinderGeometry(0.04, 0.04, 0.8, 8);
                 const antTip = new THREE.SphereGeometry(0.12, 12, 12);
 
@@ -467,7 +579,6 @@
                 antennaR.rotation.z = 0.2;
                 group.add(antennaR);
 
-                // Limbs
                 const armGeo = new THREE.CylinderGeometry(0.16, 0.16, 1.3, 12);
                 armGeo.rotateZ(Math.PI / 2);
                 const armL = new THREE.Mesh(armGeo, limbMat);
@@ -488,7 +599,6 @@
                 group.add(legR);
             }
 
-            // Jetpack Tank & Flames
             const jetpackMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, metalness: 0.6 });
             const jetpack = new THREE.Mesh(new THREE.BoxGeometry(0.9, 1.2, 0.5), jetpackMat);
             jetpack.position.set(0, 2.4, 0.5);
@@ -509,7 +619,6 @@
         let currentSlot = 1;
 
         function initPlayerModel(type) {
-            // Local player model is hidden in first-person view so you don't see your own head/eyes
             localPlayerModel = createCharacterGeometry(type);
             localPlayerModel.visible = false; // Hidden locally in 1st person
             scene.add(localPlayerModel);
@@ -521,7 +630,7 @@
 
         function createRemotePlayerModel(type) {
             remotePlayer = createCharacterGeometry(type);
-            remotePlayer.visible = false; // Becomes visible when data streams in
+            remotePlayer.visible = false;
             scene.add(remotePlayer);
         }
 
@@ -679,7 +788,7 @@
                 if (camera.position.y < -50) {
                     playerHealth = Math.max(0, playerHealth - 25);
                     document.getElementById('healthDisplay').innerText = `${playerHealth} / 100`;
-                    camera.position.set(0, 20, 0);
+                    camera.position.set(isHost ? 0 : 80, 20, 0);
                     velocity.y = 0;
                 }
 
