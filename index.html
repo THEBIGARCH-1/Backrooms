@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Backrooms - Level 0 (Smooth Slide Edition)</title>
+    <title>The Backrooms - Level 0 (Crouch Update)</title>
     <style>
         body { margin: 0; overflow: hidden; background-color: #000; font-family: "Courier New", Courier, monospace; }
         #blocker {
@@ -29,8 +29,8 @@
         <div id="instructions">
             <h1 style="font-size: 40px;">THE BACKROOMS</h1>
             <p>Click to enter.</p>
-            <p><b>W, A, S, D</b> = Move | <b>Mouse</b> = Look Around | <b>ESC</b> = Pause</p>
-            <p class="danger">Slide against the walls safely. Don't look back.</p>
+            <p><b>W, A, S, D</b> = Move | <b>Mouse</b> = Look Around<br><b>LEFT CTRL</b> = Crouch | <b>ESC</b> = Pause</p>
+            <p class="danger">Stay quiet. They listen to the hum.</p>
         </div>
     </div>
     
@@ -38,7 +38,6 @@
 
     <script>
         // --- 1. HYPER-DETAILED PROCEDURAL TEXTURES ---
-        
         function createWallpaperTexture() {
             const canvas = document.createElement('canvas');
             canvas.width = 512; canvas.height = 512;
@@ -47,7 +46,6 @@
             ctx.fillStyle = '#b89938';
             ctx.fillRect(0, 0, 512, 512);
 
-            // Detailed chevron wallpaper line style
             ctx.strokeStyle = '#917627';
             ctx.lineWidth = 3.5;
             for (let y = 0; y < 512; y += 28) {
@@ -55,12 +53,11 @@
                     ctx.beginPath();
                     ctx.moveTo(x, y + 14);
                     ctx.lineTo(x + 14, y);
-                    ctx.lineTo(x + 28, y + 14);
+                    ctx.lineTo(x + 32, y + 14);
                     ctx.stroke();
                 }
             }
             
-            // Grime & moisture damage spots
             for (let i = 0; i < 12000; i++) {
                 ctx.fillStyle = `rgba(35, 25, 0, ${Math.random() * 0.07})`;
                 ctx.fillRect(Math.random() * 512, Math.random() * 512, Math.random() * 5, Math.random() * 5);
@@ -87,7 +84,6 @@
                 ctx.fillRect(Math.random() * 512, Math.random() * 512, 2, 2);
             }
 
-            // Dark wet damp patches
             for (let i = 0; i < 40; i++) {
                 const sx = Math.random() * 512, sy = Math.random() * 512, sr = 15 + Math.random() * 35;
                 const grad = ctx.createRadialGradient(sx, sy, 0, sx, sy, sr);
@@ -119,7 +115,6 @@
                 ctx.fillRect(Math.random() * 512, Math.random() * 512, 2, 2);
             }
 
-            // Grid lines
             ctx.strokeStyle = '#22211e';
             ctx.lineWidth = 10;
             ctx.strokeRect(0, 0, 512, 512);
@@ -137,7 +132,9 @@
         scene.fog = new THREE.Fog(0x8a7724, 15, 150);
 
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.5, 1000);
-        camera.position.y = 7.5;
+        let normalEyeHeight = 7.5;
+        let crouchEyeHeight = 4.0;
+        camera.position.y = normalEyeHeight;
 
         const renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
@@ -207,7 +204,7 @@
             }
         }
 
-        // --- 4. CONTROLS & SEPARATE AXIS SLIDING COLLISION ---
+        // --- 4. CONTROLS, CROUCH & COLLISION ---
         const controls = new THREE.PointerLockControls(camera, document.body);
         const blocker = document.getElementById('blocker');
         const instructions = document.getElementById('instructions');
@@ -217,7 +214,7 @@
         controls.addEventListener('unlock', () => blocker.style.display = 'flex');
         scene.add(controls.getObject());
 
-        let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false;
+        let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false, isCrouching = false;
         const velocity = new THREE.Vector3();
         const direction = new THREE.Vector3();
         let prevTime = performance.now();
@@ -228,20 +225,22 @@
             if (e.code === 'KeyS') moveBackward = true;
             if (e.code === 'KeyA') moveLeft = true;
             if (e.code === 'KeyD') moveRight = true;
+            if (e.code === 'ControlLeft') isCrouching = true;
         });
         document.addEventListener('keyup', (e) => {
             if (e.code === 'KeyW') moveForward = false;
             if (e.code === 'KeyS') moveBackward = false;
             if (e.code === 'KeyA') moveLeft = false;
             if (e.code === 'KeyD') moveRight = false;
+            if (e.code === 'ControlLeft') isCrouching = false;
         });
 
-        // Helper function to check collisions on a given box position
         function checkCollision(pos) {
             const playerRadius = 2.0;
+            const currentHeight = isCrouching ? crouchEyeHeight : normalEyeHeight;
             const playerBox = new THREE.Box3(
                 new THREE.Vector3(pos.x - playerRadius, 0, pos.z - playerRadius),
-                new THREE.Vector3(pos.x + playerRadius, ceilingHeight, pos.z + playerRadius)
+                new THREE.Vector3(pos.x + playerRadius, currentHeight + 2, pos.z + playerRadius)
             );
             for (let i = 0; i < objects.length; i++) {
                 const wallBox = new THREE.Box3().setFromObject(objects[i]);
@@ -265,42 +264,42 @@
                 direction.x = Number(moveRight) - Number(moveLeft);
                 direction.normalize();
 
-                if (moveForward || moveBackward) velocity.z -= direction.z * 280.0 * delta;
-                if (moveLeft || moveRight) velocity.x -= direction.x * 280.0 * delta;
+                // Slow down movement speed if crouching
+                const moveSpeed = isCrouching ? 140.0 : 280.0;
+
+                if (moveForward || moveBackward) velocity.z -= direction.z * moveSpeed * delta;
+                if (moveLeft || moveRight) velocity.x -= direction.x * moveSpeed * delta;
 
                 const playerPos = controls.getObject().position;
+                const oldX = playerPos.x;
+                const oldZ = playerPos.z;
 
-                // Move X and Z separately to allow smooth sliding along walls instead of sticking/getting trapped
-                const deltaX = -velocity.x * delta;
-                const deltaZ = -velocity.z * delta;
-
-                // Test X movement independently
-                controls.moveRight(deltaX);
+                controls.moveRight(-velocity.x * delta);
                 if (checkCollision(playerPos)) {
-                    controls.moveRight(-deltaX); // Revert X if it hits
+                    controls.moveRight(velocity.x * delta);
                 }
 
-                // Test Z movement independently
-                controls.moveForward(deltaZ);
+                controls.moveForward(-velocity.z * delta);
                 if (checkCollision(playerPos)) {
-                    controls.moveForward(-deltaZ); // Revert Z if it hits
+                    controls.moveForward(velocity.z * delta);
                 }
 
-                // Head Bobbing Effect while moving
+                // Smooth camera transition between standing and crouching height
+                let targetHeight = isCrouching ? crouchEyeHeight : normalEyeHeight;
                 const isMoving = moveForward || moveBackward || moveLeft || moveRight;
+                
                 if (isMoving) {
-                    headBobTimer += delta * 10;
-                    camera.position.y = 7.5 + Math.sin(headBobTimer) * 0.15;
+                    headBobTimer += delta * (isCrouching ? 7 : 10);
+                    camera.position.y += (targetHeight + Math.sin(headBobTimer) * (isCrouching ? 0.08 : 0.15) - camera.position.y) * 0.1;
                 } else {
-                    camera.position.y = 7.5;
+                    camera.position.y += (targetHeight - camera.position.y) * 0.1;
                 }
 
-                // Rare, occasional light flickering (much less frequent)
-                if (Math.random() < 0.005 && lights.length > 0) {
+                // Balanced, natural fluorescent tube flicker (rare, subtle, realistic)
+                if (Math.random() < 0.0015 && lights.length > 0) {
                     const targetLight = lights[Math.floor(Math.random() * lights.length)];
-                    const originalIntensity = targetLight.intensity;
-                    targetLight.intensity = 0.05;
-                    setTimeout(() => { targetLight.intensity = 0.75; }, 150);
+                    targetLight.intensity = 0.1;
+                    setTimeout(() => { targetLight.intensity = 0.75; }, 100 + Math.random() * 200);
                 }
 
                 prevTime = time;
