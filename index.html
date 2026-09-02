@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Backrooms - Level 0</title>
+    <title>The Backrooms - Level 0 (Smooth Slide Edition)</title>
     <style>
         body { margin: 0; overflow: hidden; background-color: #000; font-family: "Courier New", Courier, monospace; }
         #blocker {
@@ -30,45 +30,40 @@
             <h1 style="font-size: 40px;">THE BACKROOMS</h1>
             <p>Click to enter.</p>
             <p><b>W, A, S, D</b> = Move | <b>Mouse</b> = Look Around | <b>ESC</b> = Pause</p>
-            <p class="danger">If you hear something wandering nearby, it has definitely heard you.</p>
+            <p class="danger">Slide against the walls safely. Don't look back.</p>
         </div>
     </div>
     
     <div id="crosshair"></div>
 
     <script>
-        // --- 1. DETAILED PROCEDURAL TEXTURES ---
+        // --- 1. HYPER-DETAILED PROCEDURAL TEXTURES ---
         
-        // Detailed Yellow Wallpaper with Pattern & Grime
         function createWallpaperTexture() {
             const canvas = document.createElement('canvas');
             canvas.width = 512; canvas.height = 512;
             const ctx = canvas.getContext('2d');
             
-            ctx.fillStyle = '#ccb043';
+            ctx.fillStyle = '#b89938';
             ctx.fillRect(0, 0, 512, 512);
 
-            ctx.strokeStyle = '#aa8f2c';
-            ctx.lineWidth = 3;
-            for (let y = 0; y < 512; y += 32) {
-                for (let x = 0; x < 512; x += 32) {
+            // Detailed chevron wallpaper line style
+            ctx.strokeStyle = '#917627';
+            ctx.lineWidth = 3.5;
+            for (let y = 0; y < 512; y += 28) {
+                for (let x = 0; x < 512; x += 28) {
                     ctx.beginPath();
-                    ctx.moveTo(x, y + 16);
-                    ctx.lineTo(x + 16, y);
-                    ctx.lineTo(x + 32, y + 16);
-                    ctx.stroke();
-
-                    ctx.beginPath();
-                    ctx.moveTo(x + 16, y + 16);
-                    ctx.lineTo(x + 16, y + 32);
+                    ctx.moveTo(x, y + 14);
+                    ctx.lineTo(x + 14, y);
+                    ctx.lineTo(x + 28, y + 14);
                     ctx.stroke();
                 }
             }
             
-            // Dirt & moisture staining
-            for (let i = 0; i < 8000; i++) {
-                ctx.fillStyle = `rgba(40, 30, 0, ${Math.random() * 0.08})`;
-                ctx.fillRect(Math.random() * 512, Math.random() * 512, Math.random() * 6, Math.random() * 6);
+            // Grime & moisture damage spots
+            for (let i = 0; i < 12000; i++) {
+                ctx.fillStyle = `rgba(35, 25, 0, ${Math.random() * 0.07})`;
+                ctx.fillRect(Math.random() * 512, Math.random() * 512, Math.random() * 5, Math.random() * 5);
             }
 
             const texture = new THREE.CanvasTexture(canvas);
@@ -78,28 +73,26 @@
             return texture;
         }
 
-        // Damp Dirty Carpet Texture
         function createCarpetTexture() {
             const canvas = document.createElement('canvas');
             canvas.width = 512; canvas.height = 512;
             const ctx = canvas.getContext('2d');
             
-            ctx.fillStyle = '#4a4425';
+            ctx.fillStyle = '#423b1e';
             ctx.fillRect(0, 0, 512, 512);
 
-            // Carpet noise texture
-            for (let i = 0; i < 25000; i++) {
-                const val = Math.floor(Math.random() * 40);
-                ctx.fillStyle = `rgb(${65 + val}, ${60 + val}, ${30 + val})`;
+            for (let i = 0; i < 30000; i++) {
+                const val = Math.floor(Math.random() * 45);
+                ctx.fillStyle = `rgb(${55 + val}, ${50 + val}, ${25 + val})`;
                 ctx.fillRect(Math.random() * 512, Math.random() * 512, 2, 2);
             }
 
-            // Damp dark stains
-            for (let i = 0; i < 30; i++) {
-                const sx = Math.random() * 512, sy = Math.random() * 512, sr = 10 + Math.random() * 30;
+            // Dark wet damp patches
+            for (let i = 0; i < 40; i++) {
+                const sx = Math.random() * 512, sy = Math.random() * 512, sr = 15 + Math.random() * 35;
                 const grad = ctx.createRadialGradient(sx, sy, 0, sx, sy, sr);
-                grad.addColorStop(0, 'rgba(15, 12, 5, 0.6)');
-                grad.addColorStop(1, 'rgba(15, 12, 5, 0)');
+                grad.addColorStop(0, 'rgba(10, 8, 2, 0.7)');
+                grad.addColorStop(1, 'rgba(10, 8, 2, 0)');
                 ctx.fillStyle = grad;
                 ctx.beginPath();
                 ctx.arc(sx, sy, sr, 0, Math.PI * 2);
@@ -109,39 +102,32 @@
             const texture = new THREE.CanvasTexture(canvas);
             texture.wrapS = THREE.RepeatWrapping;
             texture.wrapT = THREE.RepeatWrapping;
-            texture.repeat.set(80, 80);
+            texture.repeat.set(70, 70);
             return texture;
         }
 
-        // Ceiling Tiles with Metal Grid Lines & Acoustic Pits
         function createCeilingTexture() {
             const canvas = document.createElement('canvas');
             canvas.width = 512; canvas.height = 512;
             const ctx = canvas.getContext('2d');
 
-            ctx.fillStyle = '#cfceca';
+            ctx.fillStyle = '#c4c3be';
             ctx.fillRect(0, 0, 512, 512);
 
-            // Acoustic tile dots
-            ctx.fillStyle = '#a8a7a2';
-            for (let i = 0; i < 6000; i++) {
+            ctx.fillStyle = '#9c9b96';
+            for (let i = 0; i < 8000; i++) {
                 ctx.fillRect(Math.random() * 512, Math.random() * 512, 2, 2);
             }
 
-            // Dark T-bar Grid Lines between tiles
-            ctx.strokeStyle = '#2b2a27';
-            ctx.lineWidth = 12;
+            // Grid lines
+            ctx.strokeStyle = '#22211e';
+            ctx.lineWidth = 10;
             ctx.strokeRect(0, 0, 512, 512);
-
-            // Inner metal border detail
-            ctx.strokeStyle = '#6e6d68';
-            ctx.lineWidth = 4;
-            ctx.strokeRect(6, 6, 500, 500);
 
             const texture = new THREE.CanvasTexture(canvas);
             texture.wrapS = THREE.RepeatWrapping;
             texture.wrapT = THREE.RepeatWrapping;
-            texture.repeat.set(60, 60);
+            texture.repeat.set(50, 50);
             return texture;
         }
 
@@ -157,7 +143,7 @@
         renderer.setSize(window.innerWidth, window.innerHeight);
         document.body.appendChild(renderer.domElement);
 
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.25);
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.28);
         scene.add(ambientLight);
 
         // --- 3. ENVIRONMENT BUILD ---
@@ -182,12 +168,11 @@
         const wallGeo = new THREE.BoxGeometry(20, ceilingHeight, 2);
         const lightHousingGeo = new THREE.BoxGeometry(8, 0.6, 4);
         const lightTubeGeo = new THREE.BoxGeometry(7, 0.2, 3);
-        const lightHousingMat = new THREE.MeshBasicMaterial({ color: 0x222222 });
+        const lightHousingMat = new THREE.MeshBasicMaterial({ color: 0x1f1f1f });
         const lightTubeMat = new THREE.MeshBasicMaterial({ color: 0xfffee0 });
 
         const occupiedGrid = new Set();
 
-        // Wall Generation
         for (let x = -400; x <= 400; x += 30) {
             for (let z = -400; z <= 400; z += 30) {
                 if (Math.abs(x) < 25 && Math.abs(z) < 25) continue;
@@ -203,7 +188,6 @@
             }
         }
 
-        // Ceiling Fluorescent Light Fixtures
         for (let x = -380; x <= 380; x += 40) {
             for (let z = -380; z <= 380; z += 40) {
                 if (!occupiedGrid.has(`${x},${z}`)) {
@@ -223,7 +207,7 @@
             }
         }
 
-        // --- 4. CONTROLS & COLLISION ---
+        // --- 4. CONTROLS & SEPARATE AXIS SLIDING COLLISION ---
         const controls = new THREE.PointerLockControls(camera, document.body);
         const blocker = document.getElementById('blocker');
         const instructions = document.getElementById('instructions');
@@ -252,6 +236,20 @@
             if (e.code === 'KeyD') moveRight = false;
         });
 
+        // Helper function to check collisions on a given box position
+        function checkCollision(pos) {
+            const playerRadius = 2.0;
+            const playerBox = new THREE.Box3(
+                new THREE.Vector3(pos.x - playerRadius, 0, pos.z - playerRadius),
+                new THREE.Vector3(pos.x + playerRadius, ceilingHeight, pos.z + playerRadius)
+            );
+            for (let i = 0; i < objects.length; i++) {
+                const wallBox = new THREE.Box3().setFromObject(objects[i]);
+                if (wallBox.intersectsBox(playerBox)) return true;
+            }
+            return false;
+        }
+
         // --- 5. ANIMATION LOOP ---
         function animate() {
             requestAnimationFrame(animate);
@@ -271,26 +269,21 @@
                 if (moveLeft || moveRight) velocity.x -= direction.x * 280.0 * delta;
 
                 const playerPos = controls.getObject().position;
-                const oldX = playerPos.x;
-                const oldZ = playerPos.z;
 
-                controls.moveRight(-velocity.x * delta);
-                controls.moveForward(-velocity.z * delta);
+                // Move X and Z separately to allow smooth sliding along walls instead of sticking/getting trapped
+                const deltaX = -velocity.x * delta;
+                const deltaZ = -velocity.z * delta;
 
-                // Wall Collision Check
-                const playerRadius = 2.5;
-                for (let i = 0; i < objects.length; i++) {
-                    const wallBox = new THREE.Box3().setFromObject(objects[i]);
-                    const playerBox = new THREE.Box3(
-                        new THREE.Vector3(playerPos.x - playerRadius, 0, playerPos.z - playerRadius),
-                        new THREE.Vector3(playerPos.x + playerRadius, ceilingHeight, playerPos.z + playerRadius)
-                    );
+                // Test X movement independently
+                controls.moveRight(deltaX);
+                if (checkCollision(playerPos)) {
+                    controls.moveRight(-deltaX); // Revert X if it hits
+                }
 
-                    if (wallBox.intersectsBox(playerBox)) {
-                        playerPos.x = oldX;
-                        playerPos.z = oldZ;
-                        break;
-                    }
+                // Test Z movement independently
+                controls.moveForward(deltaZ);
+                if (checkCollision(playerPos)) {
+                    controls.moveForward(-deltaZ); // Revert Z if it hits
                 }
 
                 // Head Bobbing Effect while moving
@@ -302,10 +295,12 @@
                     camera.position.y = 7.5;
                 }
 
-                // Fluorescent Light Flickering
-                if (Math.random() < 0.04 && lights.length > 0) {
+                // Rare, occasional light flickering (much less frequent)
+                if (Math.random() < 0.005 && lights.length > 0) {
                     const targetLight = lights[Math.floor(Math.random() * lights.length)];
-                    targetLight.intensity = Math.random() < 0.4 ? 0.05 : 0.75;
+                    const originalIntensity = targetLight.intensity;
+                    targetLight.intensity = 0.05;
+                    setTimeout(() => { targetLight.intensity = 0.75; }, 150);
                 }
 
                 prevTime = time;
