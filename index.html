@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Backrooms - Infinite Procedural Labyrinth</title>
+    <title>The Backrooms - Body Awareness & Infinite Labyrinth</title>
     <style>
         body { margin: 0; overflow: hidden; background-color: #000; font-family: "Courier New", Courier, monospace; }
         #blocker {
@@ -30,7 +30,7 @@
             <h1 style="font-size: 40px;">THE BACKROOMS</h1>
             <p>Click to enter the endless corridors.</p>
             <p><b>W, A, S, D</b> = Move | <b>Mouse</b> = Look Around<br><b>C</b> = Crouch | <b>ESC</b> = Pause</p>
-            <p class="danger">Infinite layout. There is no escape.</p>
+            <p class="danger">Look down. Your body is here.</p>
         </div>
     </div>
     
@@ -143,7 +143,51 @@
         const ambientLight = new THREE.AmbientLight(0xffffff, 0.3);
         scene.add(ambientLight);
 
-        // --- 3. ENVIRONMENT & PROCEDURAL CHUNKING SYSTEM ---
+        // --- 3. CREATE PLAYER BODY MODEL (Torso, Legs, Feet) ---
+        const bodyGroup = new THREE.Group();
+
+        // Materials for clothing
+        const shirtMat = new THREE.MeshLambertMaterial({ color: 0x223344 }); // dark jacket/shirt
+        const pantsMat = new THREE.MeshLambertMaterial({ color: 0x1a1a1a }); // dark trousers
+        const shoeMat = new THREE.MeshLambertMaterial({ color: 0x111111 });  // shoes
+
+        // Torso
+        const torsoGeo = new THREE.BoxGeometry(1.8, 2.2, 1.0);
+        const torso = new THREE.Mesh(torsoGeo, shirtMat);
+        torso.position.set(0, -2.2, -0.5);
+        bodyGroup.add(torso);
+
+        // Left Leg & Foot
+        const legGeo = new THREE.BoxGeometry(0.7, 3.2, 0.7);
+        const leftLegPivot = new THREE.Group();
+        leftLegPivot.position.set(-0.5, -3.3, -0.5);
+        const leftLeg = new THREE.Mesh(legGeo, pantsMat);
+        leftLeg.position.set(0, -1.6, 0);
+        leftLegPivot.add(leftLeg);
+        
+        const footGeo = new THREE.BoxGeometry(0.8, 0.6, 1.2);
+        const leftFoot = new THREE.Mesh(footGeo, shoeMat);
+        leftFoot.position.set(0, -3.4, 0.2);
+        leftLegPivot.add(leftFoot);
+        bodyGroup.add(leftLegPivot);
+
+        // Right Leg & Foot
+        const rightLegPivot = new THREE.Group();
+        rightLegPivot.position.set(0.5, -3.3, -0.5);
+        const rightLeg = new THREE.Mesh(legGeo, pantsMat);
+        rightLeg.position.set(0, -1.6, 0);
+        rightLegPivot.add(rightLeg);
+
+        const rightFoot = new THREE.Mesh(footGeo, shoeMat);
+        rightFoot.position.set(0, -3.4, 0.2);
+        rightLegPivot.add(rightFoot);
+        bodyGroup.add(rightLegPivot);
+
+        // Attach the body directly to the camera so it follows your look and position naturally
+        camera.add(bodyGroup);
+        scene.add(camera);
+
+        // --- 4. ENVIRONMENT & PROCEDURAL CHUNKING SYSTEM ---
         const wallMat = new THREE.MeshLambertMaterial({ map: createWallpaperTexture() });
         const floorMat = new THREE.MeshLambertMaterial({ map: createCarpetTexture() });
         const ceilingMat = new THREE.MeshLambertMaterial({ map: createCeilingTexture() });
@@ -218,7 +262,7 @@
             }
         }
 
-        // --- 4. CONTROLS & COLLISION ---
+        // --- 5. CONTROLS & COLLISION ---
         const controls = new THREE.PointerLockControls(camera, document.body);
         const blocker = document.getElementById('blocker');
         const instructions = document.getElementById('instructions');
@@ -227,11 +271,10 @@
         
         controls.addEventListener('lock', () => {
             blocker.style.display = 'none';
-            prevTime = performance.now(); // FIX: Reset timer on lock so delta doesn't spike and jump positions
+            prevTime = performance.now();
         });
         
         controls.addEventListener('unlock', () => blocker.style.display = 'flex');
-        scene.add(controls.getObject());
 
         let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false, isCrouching = false;
         const velocity = new THREE.Vector3();
@@ -269,13 +312,13 @@
             return false;
         }
 
-        // --- 5. ANIMATION LOOP & INFINITE MAP LOADER ---
+        // --- 6. ANIMATION LOOP & BODY MOVEMENT ---
         function animate() {
             requestAnimationFrame(animate);
 
             if (controls.isLocked) {
                 const time = performance.now();
-                const delta = Math.min((time - prevTime) / 1000, 0.1); // FIX: Clamp delta time to prevent physics explosions/green screen freezes after pausing
+                const delta = Math.min((time - prevTime) / 1000, 0.1);
 
                 velocity.x -= velocity.x * 10.0 * delta;
                 velocity.z -= velocity.z * 10.0 * delta;
@@ -318,8 +361,17 @@
                 if (isMoving) {
                     headBobTimer += delta * (isCrouching ? 7 : 10);
                     camera.position.y += (targetHeight + Math.sin(headBobTimer) * (isCrouching ? 0.08 : 0.15) - camera.position.y) * 0.1;
+                    
+                    // Procedural walking animation for legs/feet when moving
+                    leftLegPivot.rotation.x = Math.sin(headBobTimer) * 0.6;
+                    rightLegPivot.rotation.x = -Math.sin(headBobTimer) * 0.6;
+                    torso.position.y = -2.2 + Math.abs(Math.sin(headBobTimer)) * 0.1;
                 } else {
                     camera.position.y += (targetHeight - camera.position.y) * 0.1;
+                    // Reset legs when standing still
+                    leftLegPivot.rotation.x *= 0.9;
+                    rightLegPivot.rotation.x *= 0.9;
+                    torso.position.y = -2.2;
                 }
 
                 prevTime = time;
