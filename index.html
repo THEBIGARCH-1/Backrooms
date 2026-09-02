@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SkyPVP Arena - Bridges, Loadout & Jetpack Flight</title>
+    <title>SkyPVP Arena - Custom Keybindings</title>
     <style>
         body { margin: 0; overflow: hidden; background-color: #0b1d3a; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; user-select: none; }
         #menu {
@@ -49,7 +49,7 @@
 
     <div id="menu">
         <h1>SkyPVP Arena</h1>
-        <p>Connected islands with bridges, custom loadout (Sword, Cannon, Jetpack Flight)!</p>
+        <p>Controls: <b>E</b> = Sword | <b>Q</b> = Cannon | <b>Shift</b> = Jetpack Fly | <b>V</b> = Toggle Mouse</p>
         <div>
             <button class="btn" id="startBtn">Singleplayer Practice</button>
             <button class="btn" id="hostOnlineBtn" style="background:#00bcd4;">Host Arena Match</button>
@@ -61,13 +61,13 @@
     <div id="hud">
         Health: <span id="healthDisplay" style="color:#ff0055;">100 / 100</span><br>
         Score / Kills: <span id="scoreDisplay" style="color:#00ffcc;">0</span><br>
-        <span style="font-size:13px; color:#aaa;">WASD to Move | Space to Jetpack Fly | 1/2/3 to Switch Loadout | Click to Attack</span>
+        <span style="font-size:13px; color:#aaa;">WASD to Move | E: Sword | Q: Cannon | Shift: Jetpack | Click to Attack</span>
     </div>
 
     <div id="loadout-bar">
-        <div class="slot active" id="slot1">1: Energy Sword</div>
-        <div class="slot" id="slot2">2: Hand Cannon</div>
-        <div class="slot" id="slot3">3: Jetpack Engine</div>
+        <div class="slot active" id="slot1">[E] Energy Sword</div>
+        <div class="slot" id="slot2">[Q] Hand Cannon</div>
+        <div class="slot" id="slot3">[Shift] Jetpack Engine</div>
     </div>
 
     <div id="crosshair"></div>
@@ -174,7 +174,6 @@
         ];
 
         islandData.forEach(data => {
-            // Rock underside
             const rockGeo = new THREE.ConeGeometry(data.size, data.size * 0.7, 7);
             const rockMat = new THREE.MeshStandardMaterial({ color: 0x3a4b65, roughness: 0.9 });
             const rock = new THREE.Mesh(rockGeo, rockMat);
@@ -182,7 +181,6 @@
             rock.rotation.x = Math.PI;
             scene.add(rock);
 
-            // Island top surface
             const topGeo = new THREE.CylinderGeometry(data.size, data.size * 0.9, 3, 16);
             const topMat = new THREE.MeshStandardMaterial({ color: 0x1b4332, roughness: 0.6 });
             const top = new THREE.Mesh(topGeo, topMat);
@@ -191,7 +189,6 @@
             solidObjects.push({ x: data.x, z: data.z, radius: data.size, y: data.y });
         });
 
-        // Connecting Bridges from Center (0,0,0) to Outer Islands
         const bridgeData = [
             { startX: 0, startZ: 0, endX: 70, endZ: 0 },
             { startX: 0, startZ: 0, endX: -70, endZ: 0 },
@@ -219,7 +216,7 @@
         });
 
         // --- PLAYER MODELS & LOADOUT STATE ---
-        let currentSlot = 1; // 1: Sword, 2: Cannon, 3: Jetpack
+        let currentSlot = 1; // 1: Sword (E), 2: Cannon (Q), 3: Jetpack (Shift)
 
         function createPlayerModel(isRemote) {
             const group = new THREE.Group();
@@ -238,7 +235,6 @@
             visor.position.set(0, 3.8, -0.45);
             group.add(visor);
 
-            // Jetpack tank on back
             const jetpack = new THREE.Mesh(new THREE.BoxGeometry(1, 1.4, 0.6), new THREE.MeshStandardMaterial({ color: 0x444444 }));
             jetpack.position.set(0, 2.6, 0.5);
             group.add(jetpack);
@@ -286,10 +282,8 @@
             const spawnPos = camera.position.clone().add(dir.clone().multiplyScalar(2));
 
             if (currentSlot === 1) {
-                // Sword melee / energy slash
                 spawnProjectile(spawnPos.x, spawnPos.y, spawnPos.z, dir.x, dir.y, dir.z, false, true);
             } else if (currentSlot === 2) {
-                // Cannon blast
                 spawnProjectile(spawnPos.x, spawnPos.y, spawnPos.z, dir.x, dir.y, dir.z, true, true);
             }
         });
@@ -301,16 +295,17 @@
         let direction = new THREE.Vector3();
 
         document.addEventListener('keydown', (e) => {
+            // Prevent default browser shortcuts for keys like Tab/Backspace/etc if needed
             if (e.code === 'KeyV') {
                 if (controls.isLocked) controls.unlock();
                 else controls.lock();
                 return;
             }
 
-            // Loadout Selection Slots (1, 2, 3)
-            if (e.code === 'Digit1') { currentSlot = 1; updateLoadoutUI(); }
-            if (e.code === 'Digit2') { currentSlot = 2; updateLoadoutUI(); }
-            if (e.code === 'Digit3') { currentSlot = 3; updateLoadoutUI(); }
+            // Custom Keybindings: E = Sword (1), Q = Cannon (2), Shift = Jetpack (3)
+            if (e.code === 'KeyE') { currentSlot = 1; updateLoadoutUI(); }
+            if (e.code === 'KeyQ') { currentSlot = 2; updateLoadoutUI(); }
+            if (e.code === 'ShiftLeft' || e.code === 'ShiftRight') { currentSlot = 3; updateLoadoutUI(); isJetpacking = true; }
 
             if (!controls.isLocked) return;
             if (e.code === 'KeyW') moveForward = true;
@@ -319,9 +314,7 @@
             if (e.code === 'KeyD') moveRight = true;
             
             if (e.code === 'Space') {
-                if (currentSlot === 3) {
-                    isJetpacking = true; // Jetpack flight active
-                } else if (canJump) {
+                if (canJump) {
                     velocity.y += 12;
                     canJump = false;
                 }
@@ -333,7 +326,9 @@
             if (e.code === 'KeyS') moveBackward = false;
             if (e.code === 'KeyA') moveLeft = false;
             if (e.code === 'KeyD') moveRight = false;
-            if (e.code === 'Space') isJetpacking = false;
+            if (e.code === 'ShiftLeft' || e.code === 'ShiftRight') {
+                isJetpacking = false;
+            }
         });
 
         function updateLoadoutUI() {
@@ -357,8 +352,8 @@
                 velocity.z -= velocity.z * 10.0 * delta;
 
                 if (isJetpacking && currentSlot === 3) {
-                    velocity.y += 25.0 * delta; // Jetpack upward boost
-                    velocity.y = Math.min(velocity.y, 12);
+                    velocity.y += 28.0 * delta; // Jetpack upward boost
+                    velocity.y = Math.min(velocity.y, 14);
                 } else {
                     velocity.y -= 30.0 * delta; // Standard Gravity
                 }
@@ -375,11 +370,9 @@
 
                 camera.position.y += velocity.y * delta;
 
-                // Collision detection with Islands and Bridges
                 let grounded = false;
                 const playerFootY = camera.position.y - 3.5;
 
-                // Check Islands
                 solidObjects.forEach(island => {
                     const distXZ = Math.hypot(camera.position.x - island.x, camera.position.z - island.z);
                     const surfaceTopY = island.y + 1.5;
@@ -393,7 +386,6 @@
                     }
                 });
 
-                // Check Bridges
                 bridgeColliders.forEach(b => {
                     if (camera.position.x >= b.x1 && camera.position.x <= b.x2 && camera.position.z >= b.z1 && camera.position.z <= b.z2) {
                         const surfaceTopY = b.y + 0.5;
@@ -410,7 +402,6 @@
                     canJump = false;
                 }
 
-                // Fall into abyss condition
                 if (camera.position.y < -50) {
                     playerHealth = Math.max(0, playerHealth - 25);
                     document.getElementById('healthDisplay').innerText = `${playerHealth} / 100`;
@@ -418,7 +409,6 @@
                     velocity.y = 0;
                 }
 
-                // Update Projectiles
                 for (let i = activeProjectiles.length - 1; i >= 0; i--) {
                     const p = activeProjectiles[i];
                     p.mesh.position.addScaledVector(p.dir, p.speed * delta);
