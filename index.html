@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Backrooms - Body Awareness & Infinite Labyrinth</title>
+    <title>The Backrooms - Entity AI & Body Awareness</title>
     <style>
         body { margin: 0; overflow: hidden; background-color: #000; font-family: "Courier New", Courier, monospace; }
         #blocker {
@@ -29,8 +29,8 @@
         <div id="instructions">
             <h1 style="font-size: 40px;">THE BACKROOMS</h1>
             <p>Click to enter the endless corridors.</p>
-            <p><b>W, A, S, D</b> = Move | <b>Mouse</b> = Look Around<br><b>C</b> = Crouch | <b>ESC</b> = Pause</p>
-            <p class="danger">Look down. Your body is here.</p>
+            <p><b>W, A, S, D</b> = Move | <b>SHIFT</b> = Sprint | <b>Mouse</b> = Look Around<br><b>C</b> = Crouch | <b>ESC</b> = Pause</p>
+            <p class="danger">Something is watching you in the dark. Run if it sees you.</p>
         </div>
     </div>
     
@@ -143,21 +143,17 @@
         const ambientLight = new THREE.AmbientLight(0xffffff, 0.3);
         scene.add(ambientLight);
 
-        // --- 3. CREATE PLAYER BODY MODEL (Torso, Legs, Feet) ---
+        // --- 3. CREATE PLAYER BODY MODEL ---
         const bodyGroup = new THREE.Group();
+        const shirtMat = new THREE.MeshLambertMaterial({ color: 0x223344 });
+        const pantsMat = new THREE.MeshLambertMaterial({ color: 0x1a1a1a });
+        const shoeMat = new THREE.MeshLambertMaterial({ color: 0x111111 });
 
-        // Materials for clothing
-        const shirtMat = new THREE.MeshLambertMaterial({ color: 0x223344 }); // dark jacket/shirt
-        const pantsMat = new THREE.MeshLambertMaterial({ color: 0x1a1a1a }); // dark trousers
-        const shoeMat = new THREE.MeshLambertMaterial({ color: 0x111111 });  // shoes
-
-        // Torso
         const torsoGeo = new THREE.BoxGeometry(1.8, 2.2, 1.0);
         const torso = new THREE.Mesh(torsoGeo, shirtMat);
         torso.position.set(0, -2.2, -0.5);
         bodyGroup.add(torso);
 
-        // Left Leg & Foot
         const legGeo = new THREE.BoxGeometry(0.7, 3.2, 0.7);
         const leftLegPivot = new THREE.Group();
         leftLegPivot.position.set(-0.5, -3.3, -0.5);
@@ -171,7 +167,6 @@
         leftLegPivot.add(leftFoot);
         bodyGroup.add(leftLegPivot);
 
-        // Right Leg & Foot
         const rightLegPivot = new THREE.Group();
         rightLegPivot.position.set(0.5, -3.3, -0.5);
         const rightLeg = new THREE.Mesh(legGeo, pantsMat);
@@ -183,11 +178,45 @@
         rightLegPivot.add(rightFoot);
         bodyGroup.add(rightLegPivot);
 
-        // Attach the body directly to the camera so it follows your look and position naturally
         camera.add(bodyGroup);
         scene.add(camera);
 
-        // --- 4. ENVIRONMENT & PROCEDURAL CHUNKING SYSTEM ---
+        // --- 4. CREATE ENTITY (Skin-stealer / Tall Entity model matching user reference) ---
+        const entityGroup = new THREE.Group();
+        const entityMat = new THREE.MeshBasicMaterial({ color: 0x111111 }); // Dark unsettling silhouette
+
+        // Distorted tall body / limbs matching reference photo
+        const eTorso = new THREE.Mesh(new THREE.BoxGeometry(1.2, 5.0, 0.8), entityMat);
+        eTorso.position.y = 4.0;
+        entityGroup.add(eTorso);
+
+        const eHead = new THREE.Mesh(new THREE.BoxGeometry(1.4, 1.4, 1.4), entityMat);
+        eHead.position.y = 7.2;
+        entityGroup.add(eHead);
+
+        const eArmGeo = new THREE.BoxGeometry(0.4, 5.5, 0.4);
+        const eLeftArm = new THREE.Mesh(eArmGeo, entityMat);
+        eLeftArm.position.set(-1.0, 3.5, 0);
+        entityGroup.add(eLeftArm);
+
+        const eRightArm = new THREE.Mesh(eArmGeo, entityMat);
+        eRightArm.position.set(1.0, 3.5, 0);
+        entityGroup.add(eRightArm);
+
+        const eLegGeo = new THREE.BoxGeometry(0.5, 5.0, 0.5);
+        const eLeftLeg = new THREE.Mesh(eLegGeo, entityMat);
+        eLeftLeg.position.set(-0.5, 0.5, 0);
+        entityGroup.add(eLeftLeg);
+
+        const eRightLeg = new THREE.Mesh(eLegGeo, entityMat);
+        eRightLeg.position.set(0.5, 0.5, 0);
+        entityGroup.add(eRightLeg);
+
+        // Spawn far away initially
+        entityGroup.position.set(50, 0, -80);
+        scene.add(entityGroup);
+
+        // --- 5. ENVIRONMENT & PROCEDURAL CHUNKING SYSTEM ---
         const wallMat = new THREE.MeshLambertMaterial({ map: createWallpaperTexture() });
         const floorMat = new THREE.MeshLambertMaterial({ map: createCarpetTexture() });
         const ceilingMat = new THREE.MeshLambertMaterial({ map: createCeilingTexture() });
@@ -262,7 +291,7 @@
             }
         }
 
-        // --- 5. CONTROLS & COLLISION ---
+        // --- 6. CONTROLS & COLLISION ---
         const controls = new THREE.PointerLockControls(camera, document.body);
         const blocker = document.getElementById('blocker');
         const instructions = document.getElementById('instructions');
@@ -276,7 +305,7 @@
         
         controls.addEventListener('unlock', () => blocker.style.display = 'flex');
 
-        let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false, isCrouching = false;
+        let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false, isCrouching = false, isSprinting = false;
         const velocity = new THREE.Vector3();
         const direction = new THREE.Vector3();
         let prevTime = performance.now();
@@ -289,6 +318,7 @@
             if (e.code === 'KeyA') moveLeft = true;
             if (e.code === 'KeyD') moveRight = true;
             if (e.code === 'KeyC') isCrouching = true;
+            if (e.code === 'ShiftLeft' || e.code === 'ShiftRight') isSprinting = true;
         });
         document.addEventListener('keyup', (e) => {
             if (e.code === 'KeyW') moveForward = false;
@@ -296,6 +326,7 @@
             if (e.code === 'KeyA') moveLeft = false;
             if (e.code === 'KeyD') moveRight = false;
             if (e.code === 'KeyC') isCrouching = false;
+            if (e.code === 'ShiftLeft' || e.code === 'ShiftRight') isSprinting = false;
         });
 
         function checkCollision(pos) {
@@ -312,7 +343,9 @@
             return false;
         }
 
-        // --- 6. ANIMATION LOOP & BODY MOVEMENT ---
+        // --- 7. ANIMATION LOOP & AI ENTITY LOGIC ---
+        let entityAnimationTimer = 0;
+
         function animate() {
             requestAnimationFrame(animate);
 
@@ -327,13 +360,17 @@
                 direction.x = Number(moveRight) - Number(moveLeft);
                 direction.normalize();
 
-                const moveSpeed = isCrouching ? 140.0 : 280.0;
+                // Speeds: Crouch = 140, Normal Walk = 260, Shift Sprint = 450 (Infinite sprint enabled)
+                let moveSpeed = 260.0;
+                if (isCrouching) moveSpeed = 140.0;
+                else if (isSprinting) moveSpeed = 450.0;
 
                 if (moveForward || moveBackward) velocity.z -= direction.z * moveSpeed * delta;
                 if (moveLeft || moveRight) velocity.x -= direction.x * moveSpeed * delta;
 
                 const playerPos = controls.getObject().position;
 
+                // Infinite chunk loader around player
                 const playerChunkX = Math.floor(playerPos.x / chunkSize);
                 const playerChunkZ = Math.floor(playerPos.z / chunkSize);
                 for (let x = playerChunkX - 2; x <= playerChunkX + 2; x++) {
@@ -355,20 +392,54 @@
                     controls.moveForward(-deltaZ);
                 }
 
+                // --- ENTITY AI: LINE OF SIGHT & CHASE LOGIC ---
+                const entityPos = entityGroup.position;
+                const distToPlayer = entityPos.distanceTo(playerPos);
+
+                // Check Line of Sight (Player must look towards entity or entity must be close enough & facing player line of sight)
+                const toEntity = new THREE.Vector3().subVectors(entityPos, playerPos).normalize();
+                const playerCamDir = new THREE.Vector3();
+                camera.getWorldDirection(playerCamDir);
+                const dotProd = playerCamDir.dot(toEntity);
+
+                // Entity chases if within range AND inside player camera's view frustum (dotProd > 0.2 means visible on screen) or if extremely close (< 35 units)
+                const canSeeEntity = (dotProd > 0.2 && distToPlayer < 90) || distToPlayer < 30;
+
+                if (canSeeEntity) {
+                    // Move towards player with terrifying speed
+                    const entitySpeed = 180.0 * delta;
+                    entityGroup.translateZ(entitySpeed);
+                    entityGroup.lookAt(playerPos.x, entityPos.y, playerPos.z);
+
+                    // Animation creepy jitter / stalk walk
+                    entityAnimationTimer += delta * 15;
+                    eLeftArm.rotation.x = Math.sin(entityAnimationTimer) * 0.8;
+                    eRightArm.rotation.x = -Math.sin(entityAnimationTimer) * 0.8;
+
+                    // Jump scare reset if it catches you
+                    if (distToPlayer < 4.5) {
+                        alert("It caught you.");
+                        playerPos.set(0, normalEyeHeight, 0);
+                        entityGroup.position.set(60, 0, -80);
+                    }
+                } else {
+                    // Idle creep / wander slowly when out of sight / not looked at
+                    entityGroup.rotation.y += 0.01;
+                }
+
+                // Player Body & Head Bob Animations
                 let targetHeight = isCrouching ? crouchEyeHeight : normalEyeHeight;
                 const isMoving = moveForward || moveBackward || moveLeft || moveRight;
                 
                 if (isMoving) {
-                    headBobTimer += delta * (isCrouching ? 7 : 10);
+                    headBobTimer += delta * (isCrouching ? 7 : (isSprinting ? 15 : 10));
                     camera.position.y += (targetHeight + Math.sin(headBobTimer) * (isCrouching ? 0.08 : 0.15) - camera.position.y) * 0.1;
                     
-                    // Procedural walking animation for legs/feet when moving
                     leftLegPivot.rotation.x = Math.sin(headBobTimer) * 0.6;
                     rightLegPivot.rotation.x = -Math.sin(headBobTimer) * 0.6;
                     torso.position.y = -2.2 + Math.abs(Math.sin(headBobTimer)) * 0.1;
                 } else {
                     camera.position.y += (targetHeight - camera.position.y) * 0.1;
-                    // Reset legs when standing still
                     leftLegPivot.rotation.x *= 0.9;
                     rightLegPivot.rotation.x *= 0.9;
                     torso.position.y = -2.2;
