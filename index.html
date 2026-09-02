@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Backrooms - Level 0 (Stable Edition)</title>
+    <title>The Backrooms - Infinite Procedural Labyrinth</title>
     <style>
         body { margin: 0; overflow: hidden; background-color: #000; font-family: "Courier New", Courier, monospace; }
         #blocker {
@@ -28,9 +28,9 @@
     <div id="blocker">
         <div id="instructions">
             <h1 style="font-size: 40px;">THE BACKROOMS</h1>
-            <p>Click to enter.</p>
+            <p>Click to enter the endless corridors.</p>
             <p><b>W, A, S, D</b> = Move | <b>Mouse</b> = Look Around<br><b>C</b> = Crouch | <b>ESC</b> = Pause</p>
-            <p class="danger">The hum never stops.</p>
+            <p class="danger">Infinite layout. There is no escape.</p>
         </div>
     </div>
     
@@ -66,7 +66,7 @@
             const texture = new THREE.CanvasTexture(canvas);
             texture.wrapS = THREE.RepeatWrapping;
             texture.wrapT = THREE.RepeatWrapping;
-            texture.repeat.set(1.5, 1);
+            texture.repeat.set(2, 2);
             return texture;
         }
 
@@ -98,7 +98,7 @@
             const texture = new THREE.CanvasTexture(canvas);
             texture.wrapS = THREE.RepeatWrapping;
             texture.wrapT = THREE.RepeatWrapping;
-            texture.repeat.set(70, 70);
+            texture.repeat.set(100, 100);
             return texture;
         }
 
@@ -122,14 +122,14 @@
             const texture = new THREE.CanvasTexture(canvas);
             texture.wrapS = THREE.RepeatWrapping;
             texture.wrapT = THREE.RepeatWrapping;
-            texture.repeat.set(50, 50);
+            texture.repeat.set(100, 100);
             return texture;
         }
 
         // --- 2. SCENE SETUP ---
         const scene = new THREE.Scene();
         scene.background = new THREE.Color(0x8a7724);
-        scene.fog = new THREE.Fog(0x8a7724, 15, 150);
+        scene.fog = new THREE.Fog(0x8a7724, 15, 120);
 
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.5, 1000);
         let normalEyeHeight = 7.5;
@@ -143,12 +143,12 @@
         const ambientLight = new THREE.AmbientLight(0xffffff, 0.3);
         scene.add(ambientLight);
 
-        // --- 3. ENVIRONMENT BUILD ---
+        // --- 3. ENVIRONMENT & PROCEDURAL CHUNKING SYSTEM ---
         const wallMat = new THREE.MeshLambertMaterial({ map: createWallpaperTexture() });
         const floorMat = new THREE.MeshLambertMaterial({ map: createCarpetTexture() });
         const ceilingMat = new THREE.MeshLambertMaterial({ map: createCeilingTexture() });
 
-        const floorGeo = new THREE.PlaneGeometry(1000, 1000);
+        const floorGeo = new THREE.PlaneGeometry(3000, 3000);
         const floor = new THREE.Mesh(floorGeo, floorMat);
         floor.rotation.x = -Math.PI / 2;
         scene.add(floor);
@@ -160,56 +160,76 @@
         scene.add(ceiling);
 
         const objects = [];
+        const activeChunks = new Set();
+        const chunkSize = 120;
+        const wallLength = 40;
 
-        const wallGeo = new THREE.BoxGeometry(20, ceilingHeight, 2);
+        const wallGeoHorizontal = new THREE.BoxGeometry(wallLength, ceilingHeight, 2);
+        const wallGeoVertical = new THREE.BoxGeometry(2, ceilingHeight, wallLength);
         const lightHousingGeo = new THREE.BoxGeometry(8, 0.6, 4);
         const lightTubeGeo = new THREE.BoxGeometry(7, 0.2, 3);
         const lightHousingMat = new THREE.MeshBasicMaterial({ color: 0x1f1f1f });
         const lightTubeMat = new THREE.MeshBasicMaterial({ color: 0xfffee0 });
 
-        const occupiedGrid = new Set();
+        function getPseudoRandom(x, z) {
+            const n = Math.sin(x * 12.9898 + z * 78.233) * 43758.5453;
+            return n - Math.floor(n);
+        }
 
-        for (let x = -400; x <= 400; x += 30) {
-            for (let z = -400; z <= 400; z += 30) {
-                if (Math.abs(x) < 25 && Math.abs(z) < 25) continue;
+        function generateChunk(chunkX, chunkZ) {
+            const chunkKey = `${chunkX},${chunkZ}`;
+            if (activeChunks.has(chunkKey)) return;
+            activeChunks.add(chunkKey);
 
-                if (Math.random() < 0.38) {
-                    const wall = new THREE.Mesh(wallGeo, wallMat);
-                    wall.position.set(x, ceilingHeight / 2, z);
-                    if (Math.random() > 0.5) wall.rotation.y = Math.PI / 2;
-                    scene.add(wall);
-                    objects.push(wall);
-                    occupiedGrid.add(`${x},${z}`);
+            const startX = chunkX * chunkSize;
+            const startZ = chunkZ * chunkSize;
+            const step = 20;
+
+            for (let x = startX; x < startX + chunkSize; x += step) {
+                for (let z = startZ; z < startZ + chunkSize; z += step) {
+                    if (Math.abs(x) < 30 && Math.abs(z) < 30) continue;
+
+                    const rand = getPseudoRandom(x, z);
+
+                    if (rand < 0.35) {
+                        const isHorizontal = getPseudoRandom(x + 5, z) > 0.5;
+                        const geo = isHorizontal ? wallGeoHorizontal : wallGeoVertical;
+                        const wall = new THREE.Mesh(geo, wallMat);
+                        
+                        wall.position.set(x, ceilingHeight / 2, z);
+                        scene.add(wall);
+                        objects.push(wall);
+                    }
+
+                    if (rand > 0.7 && Math.abs(x % 40) === 0 && Math.abs(z % 40) === 0) {
+                        const housing = new THREE.Mesh(lightHousingGeo, lightHousingMat);
+                        housing.position.set(x, ceilingHeight - 0.3, z);
+                        scene.add(housing);
+
+                        const tube = new THREE.Mesh(lightTubeGeo, lightTubeMat);
+                        tube.position.set(x, ceilingHeight - 0.5, z);
+                        scene.add(tube);
+
+                        const pLight = new THREE.PointLight(0xfffae0, 0.65, 45);
+                        pLight.position.set(x, ceilingHeight - 2, z);
+                        scene.add(pLight);
+                    }
                 }
             }
         }
 
-        // Clean, stable lights (no tracking arrays for flickering)
-        for (let x = -380; x <= 380; x += 40) {
-            for (let z = -380; z <= 380; z += 40) {
-                if (!occupiedGrid.has(`${x},${z}`)) {
-                    const housing = new THREE.Mesh(lightHousingGeo, lightHousingMat);
-                    housing.position.set(x, ceilingHeight - 0.3, z);
-                    scene.add(housing);
-
-                    const tube = new THREE.Mesh(lightTubeGeo, lightTubeMat);
-                    tube.position.set(x, ceilingHeight - 0.5, z);
-                    scene.add(tube);
-
-                    const pLight = new THREE.PointLight(0xfffae0, 0.7, 40);
-                    pLight.position.set(x, ceilingHeight - 2, z);
-                    scene.add(pLight);
-                }
-            }
-        }
-
-        // --- 4. CONTROLS, C-KEY CROUCH & COLLISION ---
+        // --- 4. CONTROLS & COLLISION ---
         const controls = new THREE.PointerLockControls(camera, document.body);
         const blocker = document.getElementById('blocker');
         const instructions = document.getElementById('instructions');
 
         instructions.addEventListener('click', () => controls.lock());
-        controls.addEventListener('lock', () => blocker.style.display = 'none');
+        
+        controls.addEventListener('lock', () => {
+            blocker.style.display = 'none';
+            prevTime = performance.now(); // FIX: Reset timer on lock so delta doesn't spike and jump positions
+        });
+        
         controls.addEventListener('unlock', () => blocker.style.display = 'flex');
         scene.add(controls.getObject());
 
@@ -220,18 +240,19 @@
         let headBobTimer = 0;
 
         document.addEventListener('keydown', (e) => {
+            if (!controls.isLocked) return;
             if (e.code === 'KeyW') moveForward = true;
             if (e.code === 'KeyS') moveBackward = true;
             if (e.code === 'KeyA') moveLeft = true;
             if (e.code === 'KeyD') moveRight = true;
-            if (e.code === 'KeyC') isCrouching = true; // Changed to C key
+            if (e.code === 'KeyC') isCrouching = true;
         });
         document.addEventListener('keyup', (e) => {
             if (e.code === 'KeyW') moveForward = false;
             if (e.code === 'KeyS') moveBackward = false;
             if (e.code === 'KeyA') moveLeft = false;
             if (e.code === 'KeyD') moveRight = false;
-            if (e.code === 'KeyC') isCrouching = false; // Changed to C key
+            if (e.code === 'KeyC') isCrouching = false;
         });
 
         function checkCollision(pos) {
@@ -248,13 +269,13 @@
             return false;
         }
 
-        // --- 5. ANIMATION LOOP ---
+        // --- 5. ANIMATION LOOP & INFINITE MAP LOADER ---
         function animate() {
             requestAnimationFrame(animate);
 
             if (controls.isLocked) {
                 const time = performance.now();
-                const delta = (time - prevTime) / 1000;
+                const delta = Math.min((time - prevTime) / 1000, 0.1); // FIX: Clamp delta time to prevent physics explosions/green screen freezes after pausing
 
                 velocity.x -= velocity.x * 10.0 * delta;
                 velocity.z -= velocity.z * 10.0 * delta;
@@ -269,17 +290,26 @@
                 if (moveLeft || moveRight) velocity.x -= direction.x * moveSpeed * delta;
 
                 const playerPos = controls.getObject().position;
-                const oldX = playerPos.x;
-                const oldZ = playerPos.z;
 
-                controls.moveRight(-velocity.x * delta);
-                if (checkCollision(playerPos)) {
-                    controls.moveRight(velocity.x * delta);
+                const playerChunkX = Math.floor(playerPos.x / chunkSize);
+                const playerChunkZ = Math.floor(playerPos.z / chunkSize);
+                for (let x = playerChunkX - 2; x <= playerChunkX + 2; x++) {
+                    for (let z = playerChunkZ - 2; z <= playerChunkZ + 2; z++) {
+                        generateChunk(x, z);
+                    }
                 }
 
-                controls.moveForward(-velocity.z * delta);
+                const deltaX = -velocity.x * delta;
+                const deltaZ = -velocity.z * delta;
+
+                controls.moveRight(deltaX);
                 if (checkCollision(playerPos)) {
-                    controls.moveForward(velocity.z * delta);
+                    controls.moveRight(-deltaX);
+                }
+
+                controls.moveForward(deltaZ);
+                if (checkCollision(playerPos)) {
+                    controls.moveForward(-deltaZ);
                 }
 
                 let targetHeight = isCrouching ? crouchEyeHeight : normalEyeHeight;
