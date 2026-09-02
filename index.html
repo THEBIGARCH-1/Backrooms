@@ -3,56 +3,31 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BlockVerse Ultimate - Open Sandbox World</title>
+    <title>SkyPVP Arena - Multiplayer Floating Island Battle</title>
     <style>
-        body { margin: 0; overflow: hidden; background-color: #87CEEB; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; user-select: none; }
+        body { margin: 0; overflow: hidden; background-color: #0b1d3a; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; user-select: none; }
         #menu {
             position: absolute; width: 100%; height: 100%;
-            background: linear-gradient(135deg, #1e3c72, #2a5298);
+            background: linear-gradient(135deg, #050b14, #1b365d);
             display: flex; flex-direction: column; justify-content: center; align-items: center;
             color: #fff; z-index: 20; text-align: center;
         }
-        h1 { font-size: 60px; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 6px; color: #ffeb3b; text-shadow: 0 4px 15px rgba(0,0,0,0.6); }
-        p { color: #e0e0e0; font-size: 19px; margin-bottom: 30px; }
+        h1 { font-size: 65px; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 6px; color: #00ffcc; text-shadow: 0 4px 20px rgba(0,255,204,0.4); }
+        p { color: #b0c4de; font-size: 19px; margin-bottom: 30px; }
         .btn {
-            background: #ff5722; color: #fff; border: none; padding: 16px 45px;
+            background: #ff0055; color: #fff; border: none; padding: 16px 45px;
             font-size: 19px; font-weight: bold; border-radius: 35px; cursor: pointer;
-            transition: 0.2s; box-shadow: 0 6px 20px rgba(255,87,34,0.5); text-transform: uppercase; margin: 10px;
+            transition: 0.2s; box-shadow: 0 6px 20px rgba(255,0,85,0.5); text-transform: uppercase; margin: 10px;
         }
-        .btn:hover { background: #ff7043; transform: scale(1.06); }
+        .btn:hover { background: #ff3377; transform: scale(1.06); }
         #hud {
             position: absolute; top: 20px; left: 20px; color: #fff; font-size: 18px;
             font-weight: bold; pointer-events: none; z-index: 10; text-shadow: 0 2px 4px rgba(0,0,0,0.8);
-            background: rgba(0,0,0,0.5); padding: 14px 22px; border-radius: 14px; border: 1px solid rgba(255,255,255,0.3);
+            background: rgba(0,0,0,0.6); padding: 14px 22px; border-radius: 14px; border: 1px solid rgba(0,255,204,0.3);
         }
-        #spawn-ui {
-            position: absolute; top: 20px; right: 20px; background: rgba(0,0,0,0.8); padding: 18px;
-            border-radius: 16px; z-index: 10; backdrop-filter: blur(6px); display: flex; flex-direction: column; gap: 12px;
-            border: 1px solid rgba(255,255,255,0.3); width: 280px;
-        }
-        input[type="text"] {
-            padding: 11px; font-size: 14px; border-radius: 8px; border: none; outline: none;
-            font-family: inherit; background: #fff; color: #333; width: 100%; box-sizing: border-box;
-        }
-        .spawn-btn {
-            background: #00bcd4; color: #fff; border: none; padding: 10px 14px; border-radius: 8px;
-            font-weight: bold; cursor: pointer; transition: 0.2s; text-transform: uppercase; font-size: 13px;
-        }
-        .spawn-btn:hover { background: #00acc1; }
-        #transform-bar {
-            position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
-            display: flex; gap: 10px; background: rgba(0,0,0,0.75); padding: 14px 24px;
-            border-radius: 18px; z-index: 10; backdrop-filter: blur(6px); align-items: center; color: #fff; font-size: 14px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-        }
-        .t-btn {
-            background: #333; color: #fff; border: 2px solid #555; padding: 9px 16px;
-            border-radius: 10px; cursor: pointer; font-weight: bold; transition: 0.2s;
-        }
-        .t-btn:hover { background: #ff5722; border-color: #ffab91; }
         #crosshair {
-            position: absolute; top: 50%; left: 50%; width: 8px; height: 8px;
-            background-color: rgba(255, 255, 255, 0.9); border: 2px solid #000; border-radius: 50%;
+            position: absolute; top: 50%; left: 50%; width: 10px; height: 10px;
+            background-color: rgba(0, 255, 204, 0.9); border: 2px solid #000; border-radius: 50%;
             transform: translate(-50%, -50%); pointer-events: none; z-index: 10;
         }
     </style>
@@ -63,44 +38,32 @@
 <body>
 
     <div id="menu">
-        <h1>BlockVerse Ultimate</h1>
-        <p>Press <b>V</b> to toggle mouse cursor anytime! Search and spawn any object, scale, rotate, clone & build!</p>
+        <h1>SkyPVP Arena</h1>
+        <p>A fast-paced multiplayer floating island combat game! Collect magic orbs, upgrade your sword, and battle friends.</p>
         <div>
-            <button class="btn" id="startBtn">Enter World</button>
-            <button class="btn" id="hostOnlineBtn" style="background:#00bcd4;">Host Online Room</button>
-            <button class="btn" id="joinOnlineBtn" style="background:#e91e63;">Join Friend Code</button>
+            <button class="btn" id="startBtn">Singleplayer Practice</button>
+            <button class="btn" id="hostOnlineBtn" style="background:#00bcd4;">Host Arena Match</button>
+            <button class="btn" id="joinOnlineBtn" style="background:#e91e63;">Join Match Code</button>
         </div>
-        <div id="roomInfo" style="margin-top: 18px; font-size: 17px; color: #ffeb3b;"></div>
+        <div id="roomInfo" style="margin-top: 18px; font-size: 17px; color: #00ffcc;"></div>
     </div>
 
     <div id="hud">
-        Selected Object: <span id="selectedObjName" style="color:#00bcd4;">None</span><br>
-        <span style="font-size:13px; color:#ccc;">Press <b>V</b> to toggle mouse. Click any object to select and transform it!</span>
-    </div>
-
-    <div id="spawn-ui">
-        <label style="color:#fff; font-size:13px; font-weight:bold;">Search & Spawn Any Object:</label>
-        <input type="text" id="searchInput" placeholder="e.g. big blue house, racecar, tree...">
-        <button class="spawn-btn" onclick="spawnSearchedObject()">Search & Spawn</button>
-    </div>
-
-    <div id="transform-bar">
-        <span><b>Tools:</b></span>
-        <button class="t-btn" onclick="transformSelected('scaleUp')">Scale +</button>
-        <button class="t-btn" onclick="transformSelected('scaleDown')">Scale -</button>
-        <button class="t-btn" onclick="transformSelected('rotate')">Rotate 45°</button>
-        <button class="t-btn" onclick="transformSelected('clone')" style="background:#4caf50;">Clone</button>
-        <button class="t-btn" onclick="transformSelected('delete')" style="background:#f44336;">Delete</button>
+        Health: <span id="healthDisplay" style="color:#ff0055;">100 / 100</span><br>
+        Score / Kills: <span id="scoreDisplay" style="color:#00ffcc;">0</span><br>
+        <span style="font-size:13px; color:#aaa;">WASD to Move | Space to Jump | Click to Attack / Shoot Energy Orb</span>
     </div>
 
     <div id="crosshair"></div>
 
     <script>
-        // --- MULTIPLAYER & GAME SETUP ---
+        // --- MULTIPLAYER SETUP ---
         let peer, conn;
         let isHost = false;
         let myId = '';
         let isOnline = false;
+        let remotePlayer;
+        let remotePlayerHealth = 100;
 
         const menu = document.getElementById('menu');
         const roomInfo = document.getElementById('roomInfo');
@@ -116,7 +79,7 @@
             peer.on('open', (id) => {
                 myId = id;
                 isHost = true;
-                roomInfo.innerHTML = `Room Code: <b>${id}</b><br>Give this code to your friend! Waiting...`;
+                roomInfo.innerHTML = `Arena Code: <b>${id}</b><br>Share with your friend! Waiting...`;
             });
             peer.on('connection', (connection) => {
                 conn = connection;
@@ -128,7 +91,7 @@
 
         document.getElementById('joinOnlineBtn').addEventListener('click', () => {
             isOnline = true;
-            const friendId = prompt("Enter your friend's Room Code:");
+            const friendId = prompt("Enter Arena Match Code:");
             if (!friendId) return;
             peer = new Peer();
             peer.on('open', (id) => {
@@ -142,241 +105,175 @@
         });
 
         function setupConnection() {
-            conn.on('open', () => { roomInfo.innerHTML = "Connected to friend successfully!"; });
+            conn.on('open', () => { roomInfo.innerHTML = "Connected to Arena match!"; });
             conn.on('data', (data) => {
                 if (data.type === 'pos') {
-                    updateRemotePlayer(data);
-                } else if (data.type === 'spawn') {
-                    createObjectInWorld(data.query, data.x, data.y, data.z, data.sx, data.sy, data.sz, data.rx, data.ry, data.rz, false);
+                    if (remotePlayer) {
+                        remotePlayer.visible = true;
+                        remotePlayer.position.set(data.x, data.y, data.z);
+                        remotePlayer.rotation.y = data.ry;
+                    }
+                } else if (data.type === 'attack') {
+                    // Trigger visual slash or hit effect from opponent
+                    spawnEnergyOrb(data.x, data.y, data.z, data.dx, data.dy, data.dz, false);
+                } else if (data.type === 'damage') {
+                    playerHealth = Math.max(0, playerHealth - data.amount);
+                    document.getElementById('healthDisplay').innerText = `${playerHealth} / 100`;
+                    if (playerHealth <= 0) {
+                        alert("You were defeated! Respawning...");
+                        playerHealth = 100;
+                        camera.position.set(0, 15, 0);
+                    }
                 }
             });
         }
 
-        // --- 3D SCENE SETUP ---
+        // --- 3D ARENA SCENE SETUP ---
         const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x87CEEB);
-        scene.fog = new THREE.FogExp2(0x87CEEB, 0.008);
+        scene.background = new THREE.Color(0x0b1d3a);
+        scene.fog = new THREE.FogExp2(0x0b1d3a, 0.005);
 
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.5, 1000);
-        camera.position.set(0, 5, 10);
+        camera.position.set(0, 15, 0);
 
         const renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.shadowMap.enabled = true;
         document.body.appendChild(renderer.domElement);
 
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.65);
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
         scene.add(ambientLight);
 
-        const sunLight = new THREE.DirectionalLight(0xffffff, 0.85);
-        sunLight.position.set(50, 100, 50);
+        const sunLight = new THREE.DirectionalLight(0x00ffcc, 1.2);
+        sunLight.position.set(30, 80, 30);
         sunLight.castShadow = true;
         scene.add(sunLight);
 
-        // --- 6 PLOTS & FAST PADS ---
-        const plotsGroup = new THREE.Group();
-        scene.add(plotsGroup);
+        // --- FLOATING ISLANDS MAP ---
+        const islandsGroup = new THREE.Group();
+        scene.add(islandsGroup);
 
-        const plotSize = 75;
-        const plotSpacing = 95;
-        const plotPositions = [
-            { x: 0, z: 0 }, { x: plotSpacing, z: 0 }, { x: -plotSpacing, z: 0 },
-            { x: 0, z: plotSpacing }, { x: plotSpacing, z: plotSpacing }, { x: -plotSpacing, z: plotSpacing }
+        const islandData = [
+            { x: 0, y: 0, z: 0, size: 40 },
+            { x: 60, y: 5, z: -60, size: 25 },
+            { x: -60, y: 8, z: -60, size: 25 },
+            { x: 60, y: 5, z: 60, size: 25 },
+            { x: -60, y: 8, z: 60, size: 25 },
+            { x: 0, y: 15, z: -110, size: 30 } // Boss Island
         ];
 
-        const placedObjects = [];
-        const fastPads = [];
-        let selectedObject = null;
+        const solidObjects = [];
 
-        plotPositions.forEach((p, idx) => {
-            const baseGeo = new THREE.BoxGeometry(plotSize, 1, plotSize);
-            const baseMat = new THREE.MeshStandardMaterial({ color: idx === 0 ? 0x76c752 : 0x8bc34a, roughness: 0.7 });
-            const plotBase = new THREE.Mesh(baseGeo, baseMat);
-            plotBase.position.set(p.x, -0.5, p.z);
-            plotsGroup.add(plotBase);
+        islandData.forEach(data => {
+            // Island Base (Rock)
+            const rockGeo = new THREE.ConeGeometry(data.size, data.size * 0.8, 7);
+            const rockMat = new THREE.MeshStandardMaterial({ color: 0x3a4b65, roughness: 0.9 });
+            const rock = new THREE.Mesh(rockGeo, rockMat);
+            rock.position.set(data.x, data.y - (data.size * 0.4), data.z);
+            rock.rotation.x = Math.PI;
+            islandsGroup.add(rock);
 
-            const padGeo = new THREE.CylinderGeometry(3.5, 3.5, 0.3, 32);
-            const padMat = new THREE.MeshStandardMaterial({ color: 0x00bcd4, emissive: 0x00bcd4, emissiveIntensity: 0.7 });
-            const fastPad = new THREE.Mesh(padGeo, padMat);
-            fastPad.position.set(p.x, 0.1, p.z);
-            plotsGroup.add(fastPad);
-            fastPads.push(fastPad);
+            // Island Top (Grass/Stone)
+            const topGeo = new THREE.CylinderGeometry(data.size, data.size * 0.9, 3, 16);
+            const topMat = new THREE.MeshStandardMaterial({ color: 0x1b4332, roughness: 0.6 });
+            const top = new THREE.Mesh(topGeo, topMat);
+            top.position.set(data.x, data.y, data.z);
+            islandsGroup.add(top);
+            solidObjects.push(top);
+
+            // Add floating crystals or pillars for atmosphere
+            const pillarGeo = new THREE.BoxGeometry(3, 12, 3);
+            const pillarMat = new THREE.MeshStandardMaterial({ color: 0x00ffcc, emissive: 0x00ffcc, emissiveIntensity: 0.5 });
+            const pillar = new THREE.Mesh(pillarGeo, pillarMat);
+            pillar.position.set(data.x + (data.size * 0.4), data.y + 6, data.z + (data.size * 0.4));
+            islandsGroup.add(pillar);
         });
 
-        // --- PLAYER CHARACTER MODEL ---
-        const playerGroup = new THREE.Group();
-        const skinMat = new THREE.MeshStandardMaterial({ color: 0xffcc99 });
-        const shirtMat = new THREE.MeshStandardMaterial({ color: 0x3f51b5 });
-        const pantsMat = new THREE.MeshStandardMaterial({ color: 0x212121 });
+        // --- PLAYER CHARACTER & OPPONENT MODELS ---
+        function createPlayerModel(isRemote) {
+            const group = new THREE.Group();
+            const armorMat = new THREE.MeshStandardMaterial({ color: isRemote ? 0xff0055 : 0x00ffcc, roughness: 0.3 });
+            const darkMat = new THREE.MeshStandardMaterial({ color: 0x111111 });
 
-        const torso = new THREE.Mesh(new THREE.BoxGeometry(1.2, 1.8, 0.6), shirtMat);
-        torso.position.y = 2.5;
-        playerGroup.add(torso);
+            const torso = new THREE.Mesh(new THREE.BoxGeometry(1.2, 1.8, 0.6), armorMat);
+            torso.position.y = 2.5;
+            group.add(torso);
 
-        const head = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), skinMat);
-        head.position.y = 3.8;
-        playerGroup.add(head);
+            const head = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), darkMat);
+            head.position.y = 3.8;
+            group.add(head);
 
-        const limbGeo = new THREE.BoxGeometry(0.5, 1.8, 0.5);
-        const leftArm = new THREE.Mesh(limbGeo, shirtMat);
-        leftArm.position.set(-0.9, 2.5, 0);
-        playerGroup.add(leftArm);
+            // Glowing visor
+            const visor = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.3, 0.2), armorMat);
+            visor.position.set(0, 3.8, -0.45);
+            group.add(visor);
 
-        const rightArm = new THREE.Mesh(limbGeo, shirtMat);
-        rightArm.position.set(0.9, 2.5, 0);
-        playerGroup.add(rightArm);
+            // Weapon (Energy Sword in hand)
+            const swordBlade = new THREE.Mesh(new THREE.BoxGeometry(0.2, 2.5, 0.2), armorMat);
+            swordBlade.position.set(0.9, 2.2, -0.5);
+            group.add(swordBlade);
 
-        const leftLeg = new THREE.Mesh(limbGeo, pantsMat);
-        leftLeg.position.set(-0.35, 1.0, 0);
-        playerGroup.add(leftLeg);
+            return group;
+        }
 
-        const rightLeg = new THREE.Mesh(limbGeo, pantsMat);
-        rightLeg.position.set(0.35, 1.0, 0);
-        playerGroup.add(rightLeg);
+        const localPlayer = createPlayerModel(false);
+        scene.add(localPlayer);
 
-        scene.add(playerGroup);
-
-        const remotePlayer = playerGroup.clone();
+        remotePlayer = createPlayerModel(true);
         remotePlayer.visible = false;
         scene.add(remotePlayer);
 
-        function updateRemotePlayer(data) {
-            remotePlayer.visible = true;
-            remotePlayer.position.set(data.x, data.y, data.z);
-            remotePlayer.rotation.y = data.ry;
-        }
+        // --- ENERGY PROJECTILES SYSTEM ---
+        const activeProjectiles = [];
 
-        // --- ADVANCED AI SEARCH & PROCEDURAL GENERATOR ---
-        function spawnSearchedObject() {
-            const query = document.getElementById('searchInput').value.trim();
-            if (!query) return;
+        function spawnEnergyOrb(x, y, z, dx, dy, dz, sendNetwork) {
+            const orbGeo = new THREE.SphereGeometry(0.5, 16, 16);
+            const orbMat = new THREE.MeshStandardMaterial({ color: 0x00ffcc, emissive: 0x00ffcc, emissiveIntensity: 1.0 });
+            const orb = new THREE.Mesh(orbGeo, orbMat);
+            orb.position.set(x, y, z);
+            scene.add(orb);
 
-            const dir = new THREE.Vector3();
-            camera.getWorldDirection(dir);
-            const spawnPos = camera.position.clone().add(dir.multiplyScalar(8));
-            spawnPos.y = Math.max(1, spawnPos.y);
-
-            createObjectInWorld(query, spawnPos.x, spawnPos.y, spawnPos.z, 1, 1, 1, 0, 0, 0, true);
-            document.getElementById('searchInput').value = '';
-        }
-
-        function createObjectInWorld(query, x, y, z, sx, sy, sz, rx, ry, rz, sendNetwork) {
-            const group = new THREE.Group();
-            const lowerQuery = query.toLowerCase();
-
-            let color = 0xff5722;
-            if (lowerQuery.includes('blue')) color = 0x2196f3;
-            else if (lowerQuery.includes('red')) color = 0xf44336;
-            else if (lowerQuery.includes('green')) color = 0x4caf50;
-            else if (lowerQuery.includes('yellow')) color = 0xffeb3b;
-            else if (lowerQuery.includes('pink')) color = 0xe91e63;
-            else if (lowerQuery.includes('purple')) color = 0x9c27b0;
-            else if (lowerQuery.includes('white')) color = 0xffffff;
-
-            const mat = new THREE.MeshStandardMaterial({ color: color, roughness: 0.3 });
-
-            if (lowerQuery.includes('house') || lowerQuery.includes('home') || lowerQuery.includes('building')) {
-                const base = new THREE.Mesh(new THREE.BoxGeometry(5, 3.5, 5), mat);
-                base.position.y = 1.75;
-                group.add(base);
-                const roof = new THREE.Mesh(new THREE.ConeGeometry(4, 2.5, 4), new THREE.MeshStandardMaterial({ color: 0x8b0000 }));
-                roof.position.y = 4.75;
-                roof.rotation.y = Math.PI / 4;
-                group.add(roof);
-            } else if (lowerQuery.includes('car') || lowerQuery.includes('racecar') || lowerQuery.includes('vehicle')) {
-                const body = new THREE.Mesh(new THREE.BoxGeometry(3, 1.2, 5.5), mat);
-                body.position.y = 1;
-                group.add(body);
-                const cabin = new THREE.Mesh(new THREE.BoxGeometry(2.2, 1, 2.5), new THREE.MeshStandardMaterial({ color: 0x111111 }));
-                cabin.position.set(0, 2, -0.2);
-                group.add(cabin);
-            } else if (lowerQuery.includes('tree') || lowerQuery.includes('plant')) {
-                const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.6, 3.5, 8), new THREE.MeshStandardMaterial({ color: 0x8b5a2b }));
-                trunk.position.y = 1.75;
-                group.add(trunk);
-                const leaves = new THREE.Mesh(new THREE.SphereGeometry(2.2, 16, 16), new THREE.MeshStandardMaterial({ color: 0x2e8b57 }));
-                leaves.position.y = 4.2;
-                group.add(leaves);
-            } else if (lowerQuery.includes('sphere') || lowerQuery.includes('ball')) {
-                const sphere = new THREE.Mesh(new THREE.SphereGeometry(1.5, 24, 24), mat);
-                sphere.position.y = 1.5;
-                group.add(sphere);
-            } else if (lowerQuery.includes('cylinder') || lowerQuery.includes('pillar')) {
-                const cyl = new THREE.Mesh(new THREE.CylinderGeometry(1, 1, 3, 24), mat);
-                cyl.position.y = 1.5;
-                group.add(cyl);
-            } else {
-                const box = new THREE.Mesh(new THREE.BoxGeometry(2.5, 2.5, 2.5), mat);
-                box.position.y = 1.25;
-                group.add(box);
-            }
-
-            group.position.set(x, y, z);
-            group.scale.set(sx, sy, sz);
-            group.rotation.set(rx, ry, rz);
-            group.userData = { query: query };
-
-            scene.add(group);
-            placedObjects.push(group);
-            selectObject(group);
+            activeProjectiles.push({
+                mesh: orb,
+                dir: new THREE.Vector3(dx, dy, dz).normalize(),
+                speed: 45,
+                life: 3.0
+            });
 
             if (sendNetwork && isOnline && conn && conn.open) {
-                conn.send({ type: 'spawn', query: query, x: x, y: y, z: z, sx: sx, sy: sy, sz: sz, rx: rx, ry: ry, rz: rz });
+                conn.send({ type: 'attack', x: x, y: y, z: z, dx: dx, dy: dy, dz: dz });
             }
         }
 
-        function selectObject(obj) {
-            selectedObject = obj;
-            document.getElementById('selectedObjName').innerText = obj.userData.query ? obj.userData.query.toUpperCase() : 'Custom Object';
-        }
+        let playerHealth = 100;
+        let playerScore = 0;
 
-        function transformSelected(action) {
-            if (!selectedObject) return;
+        window.addEventListener('mousedown', (e) => {
+            if (!controls.isLocked) return;
+            const dir = new THREE.Vector3();
+            camera.getWorldDirection(dir);
+            const spawnPos = camera.position.clone().add(dir.clone().multiplyScalar(2));
+            spawnEnergyOrb(spawnPos.x, spawnPos.y, spawnPos.z, dir.x, dir.y, dir.z, true);
+        });
 
-            if (action === 'scaleUp') {
-                selectedObject.scale.multiplyScalar(1.25);
-            } else if (action === 'scaleDown') {
-                selectedObject.scale.divideScalar(1.25);
-            } else if (action === 'rotate') {
-                selectedObject.rotation.y += Math.PI / 4;
-            } else if (action === 'clone') {
-                const clone = selectedObject.clone();
-                clone.position.add(new THREE.Vector3(3, 0, 3));
-                scene.add(clone);
-                placedObjects.push(clone);
-                selectObject(clone);
-            } else if (action === 'delete') {
-                scene.remove(selectedObject);
-                const idx = placedObjects.indexOf(selectedObject);
-                if (idx > -1) placedObjects.splice(idx, 1);
-                selectedObject = null;
-                document.getElementById('selectedObjName').innerText = 'None';
-            }
-        }
-
-        // --- MOUSE & TOGGLE CONTROLS (Press V to Unlock/Lock Mouse) ---
+        // --- CONTROLS & MOVEMENT ---
         const controls = new THREE.PointerLockControls(camera, document.body);
         let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false, canJump = false;
         let velocity = new THREE.Vector3();
         let direction = new THREE.Vector3();
-        let animTimer = 0;
 
         document.addEventListener('keydown', (e) => {
             if (e.code === 'KeyV') {
-                if (controls.isLocked) {
-                    controls.unlock();
-                } else {
-                    controls.lock();
-                }
+                if (controls.isLocked) controls.unlock();
+                else controls.lock();
                 return;
             }
-
             if (!controls.isLocked) return;
             if (e.code === 'KeyW') moveForward = true;
             if (e.code === 'KeyS') moveBackward = true;
             if (e.code === 'KeyA') moveLeft = true;
             if (e.code === 'KeyD') moveRight = true;
-            if (e.code === 'Space' && canJump) { velocity.y += 11; canJump = false; }
+            if (e.code === 'Space' && canJump) { velocity.y += 14; canJump = false; }
         });
 
         document.addEventListener('keyup', (e) => {
@@ -384,26 +281,6 @@
             if (e.code === 'KeyS') moveBackward = false;
             if (e.code === 'KeyA') moveLeft = false;
             if (e.code === 'KeyD') moveRight = false;
-        });
-
-        window.addEventListener('mousedown', (e) => {
-            if (!controls.isLocked) return;
-            if (e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON') return;
-
-            const raycaster = new THREE.Raycaster();
-            raycaster.setFromCamera(new THREE.Vector2(0, 0), camera);
-            const intersects = raycaster.intersectObjects(scene.children, true);
-
-            if (intersects.length > 0) {
-                const hit = intersects[0];
-                let rootObj = hit.object;
-                while (rootObj.parent && rootObj.parent !== scene) {
-                    rootObj = rootObj.parent;
-                }
-                if (placedObjects.includes(rootObj)) {
-                    selectObject(rootObj);
-                }
-            }
         });
 
         // --- GAME LOOP ---
@@ -418,49 +295,68 @@
             if (controls.isLocked) {
                 velocity.x -= velocity.x * 10.0 * delta;
                 velocity.z -= velocity.z * 10.0 * delta;
-                velocity.y -= 28.0 * delta;
+                velocity.y -= 30.0 * delta;
 
                 direction.z = Number(moveForward) - Number(moveBackward);
                 direction.x = Number(moveRight) - Number(moveLeft);
                 direction.normalize();
 
-                if (moveForward || moveBackward) velocity.z -= direction.z * 38.0 * delta;
-                if (moveLeft || moveRight) velocity.x -= direction.x * 38.0 * delta;
+                if (moveForward || moveBackward) velocity.z -= direction.z * 40.0 * delta;
+                if (moveLeft || moveRight) velocity.x -= direction.x * 40.0 * delta;
 
                 controls.moveRight(-velocity.x * delta);
                 controls.moveForward(-velocity.z * delta);
 
                 camera.position.y += velocity.y * delta;
 
-                if (camera.position.y < 3.5) {
+                // Simple Island collision check
+                let onIsland = false;
+                islandData.forEach(data => {
+                    const distXZ = Math.hypot(camera.position.x - data.x, camera.position.z - data.z);
+                    const surfaceY = data.y + 2.5;
+                    if (distXZ < data.size && camera.position.y >= surfaceY && camera.position.y <= surfaceY + 4 && velocity.y <= 0) {
+                        camera.position.y = surfaceY;
+                        velocity.y = 0;
+                        canJump = true;
+                        onIsland = true;
+                    }
+                });
+
+                // Fall into abyss condition
+                if (camera.position.y < -40) {
+                    playerHealth = Math.max(0, playerHealth - 25);
+                    document.getElementById('healthDisplay').innerText = `${playerHealth} / 100`;
+                    camera.position.set(0, 15, 0);
                     velocity.y = 0;
-                    camera.position.y = 3.5;
-                    canJump = true;
+                }
+
+                // Update Projectiles
+                for (let i = activeProjectiles.length - 1; i >= 0; i--) {
+                    const p = activeProjectiles[i];
+                    p.mesh.position.addScaledVector(p.dir, p.speed * delta);
+                    p.life -= delta;
+
+                    // Check hit with remote player
+                    if (remotePlayer.visible && p.mesh.position.distanceTo(remotePlayer.position) < 3.0) {
+                        playerScore += 10;
+                        document.getElementById('scoreDisplay').innerText = playerScore;
+                        scene.remove(p.mesh);
+                        activeProjectiles.splice(i, 1);
+                        if (isOnline && conn && conn.open) {
+                            conn.send({ type: 'damage', amount: 25 });
+                        }
+                        continue;
+                    }
+
+                    if (p.life <= 0) {
+                        scene.remove(p.mesh);
+                        activeProjectiles.splice(i, 1);
+                    }
                 }
 
                 const camPos = camera.position;
-                playerGroup.position.set(camPos.x, camPos.y - 3.5, camPos.z);
-                playerGroup.rotation.y = controls.getObject().rotation.y;
-
-                const isMoving = moveForward || moveBackward || moveLeft || moveRight;
-                if (isMoving) {
-                    animTimer += delta * 14;
-                    leftArm.rotation.x = Math.sin(animTimer) * 0.7;
-                    rightArm.rotation.x = -Math.sin(animTimer) * 0.7;
-                    leftLeg.rotation.x = -Math.sin(animTimer) * 0.7;
-                    rightLeg.rotation.x = Math.sin(animTimer) * 0.7;
-                } else {
-                    leftArm.rotation.x = 0; rightArm.rotation.x = 0;
-                    leftLeg.rotation.x = 0; rightLeg.rotation.x = 0;
-                }
-
-                fastPads.forEach(pad => {
-                    const dist = new THREE.Vector2(camPos.x, camPos.z).distanceTo(new THREE.Vector2(pad.position.x, pad.position.z));
-                    if (dist < 3.5) {
-                        camera.position.x = pad.position.x;
-                        camera.position.z = pad.position.z + 10;
-                    }
-                });
+                localPlayer.position.set(camPos.x, camPos.y - 3.5, camPos.z);
+                localPlayer.rotation.y = controls.getObject().rotation.y;
 
                 if (isOnline && conn && conn.open) {
                     conn.send({
