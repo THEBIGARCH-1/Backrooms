@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BlockVerse Pro - Sandbox with Free Mouse & Object Tools</title>
+    <title>BlockVerse Ultimate - Open Sandbox World</title>
     <style>
         body { margin: 0; overflow: hidden; background-color: #87CEEB; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; user-select: none; }
         #menu {
@@ -12,46 +12,47 @@
             display: flex; flex-direction: column; justify-content: center; align-items: center;
             color: #fff; z-index: 20; text-align: center;
         }
-        h1 { font-size: 55px; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 4px; color: #ffeb3b; text-shadow: 0 4px 10px rgba(0,0,0,0.5); }
-        p { color: #e0e0e0; font-size: 18px; margin-bottom: 25px; }
+        h1 { font-size: 60px; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 6px; color: #ffeb3b; text-shadow: 0 4px 15px rgba(0,0,0,0.6); }
+        p { color: #e0e0e0; font-size: 19px; margin-bottom: 30px; }
         .btn {
-            background: #ff5722; color: #fff; border: none; padding: 15px 40px;
-            font-size: 18px; font-weight: bold; border-radius: 30px; cursor: pointer;
-            transition: 0.2s; box-shadow: 0 5px 15px rgba(255,87,34,0.4); text-transform: uppercase; margin: 8px;
+            background: #ff5722; color: #fff; border: none; padding: 16px 45px;
+            font-size: 19px; font-weight: bold; border-radius: 35px; cursor: pointer;
+            transition: 0.2s; box-shadow: 0 6px 20px rgba(255,87,34,0.5); text-transform: uppercase; margin: 10px;
         }
-        .btn:hover { background: #ff7043; transform: scale(1.05); }
+        .btn:hover { background: #ff7043; transform: scale(1.06); }
         #hud {
             position: absolute; top: 20px; left: 20px; color: #fff; font-size: 18px;
             font-weight: bold; pointer-events: none; z-index: 10; text-shadow: 0 2px 4px rgba(0,0,0,0.8);
-            background: rgba(0,0,0,0.4); padding: 12px 20px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.2);
+            background: rgba(0,0,0,0.5); padding: 14px 22px; border-radius: 14px; border: 1px solid rgba(255,255,255,0.3);
         }
         #spawn-ui {
-            position: absolute; top: 20px; right: 20px; background: rgba(0,0,0,0.75); padding: 16px;
-            border-radius: 14px; z-index: 10; backdrop-filter: blur(5px); display: flex; flex-direction: column; gap: 10px;
-            border: 1px solid rgba(255,255,255,0.3); width: 260px;
+            position: absolute; top: 20px; right: 20px; background: rgba(0,0,0,0.8); padding: 18px;
+            border-radius: 16px; z-index: 10; backdrop-filter: blur(6px); display: flex; flex-direction: column; gap: 12px;
+            border: 1px solid rgba(255,255,255,0.3); width: 280px;
         }
         input[type="text"] {
-            padding: 10px; font-size: 14px; border-radius: 8px; border: none; outline: none;
+            padding: 11px; font-size: 14px; border-radius: 8px; border: none; outline: none;
             font-family: inherit; background: #fff; color: #333; width: 100%; box-sizing: border-box;
         }
         .spawn-btn {
-            background: #00bcd4; color: #fff; border: none; padding: 9px 12px; border-radius: 8px;
+            background: #00bcd4; color: #fff; border: none; padding: 10px 14px; border-radius: 8px;
             font-weight: bold; cursor: pointer; transition: 0.2s; text-transform: uppercase; font-size: 13px;
         }
         .spawn-btn:hover { background: #00acc1; }
         #transform-bar {
             position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
-            display: flex; gap: 8px; background: rgba(0,0,0,0.7); padding: 12px 20px;
-            border-radius: 16px; z-index: 10; backdrop-filter: blur(5px); align-items: center; color: #fff; font-size: 14px;
+            display: flex; gap: 10px; background: rgba(0,0,0,0.75); padding: 14px 24px;
+            border-radius: 18px; z-index: 10; backdrop-filter: blur(6px); align-items: center; color: #fff; font-size: 14px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
         }
         .t-btn {
-            background: #333; color: #fff; border: 2px solid #555; padding: 8px 14px;
-            border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.2s;
+            background: #333; color: #fff; border: 2px solid #555; padding: 9px 16px;
+            border-radius: 10px; cursor: pointer; font-weight: bold; transition: 0.2s;
         }
         .t-btn:hover { background: #ff5722; border-color: #ffab91; }
         #crosshair {
             position: absolute; top: 50%; left: 50%; width: 8px; height: 8px;
-            background-color: rgba(255, 255, 255, 0.8); border: 2px solid #000; border-radius: 50%;
+            background-color: rgba(255, 255, 255, 0.9); border: 2px solid #000; border-radius: 50%;
             transform: translate(-50%, -50%); pointer-events: none; z-index: 10;
         }
     </style>
@@ -62,29 +63,29 @@
 <body>
 
     <div id="menu">
-        <h1>BlockVerse Pro</h1>
-        <p>Press <b>V</b> to unlock/lock your mouse cursor! Search any shape, resize, rotate, and build!</p>
+        <h1>BlockVerse Ultimate</h1>
+        <p>Press <b>V</b> to toggle mouse cursor anytime! Search and spawn any object, scale, rotate, clone & build!</p>
         <div>
-            <button class="btn" id="startBtn">Enter Sandbox World</button>
+            <button class="btn" id="startBtn">Enter World</button>
             <button class="btn" id="hostOnlineBtn" style="background:#00bcd4;">Host Online Room</button>
             <button class="btn" id="joinOnlineBtn" style="background:#e91e63;">Join Friend Code</button>
         </div>
-        <div id="roomInfo" style="margin-top: 15px; font-size: 16px; color: #ffeb3b;"></div>
+        <div id="roomInfo" style="margin-top: 18px; font-size: 17px; color: #ffeb3b;"></div>
     </div>
 
     <div id="hud">
         Selected Object: <span id="selectedObjName" style="color:#00bcd4;">None</span><br>
-        <span style="font-size:13px; color:#ccc;">Press <b>V</b> to toggle mouse cursor. Click objects to transform!</span>
+        <span style="font-size:13px; color:#ccc;">Press <b>V</b> to toggle mouse. Click any object to select and transform it!</span>
     </div>
 
     <div id="spawn-ui">
-        <label style="color:#fff; font-size:13px; font-weight:bold;">Search Any Shape / Object:</label>
-        <input type="text" id="searchInput" placeholder="e.g. sphere, cylinder, house, tree...">
+        <label style="color:#fff; font-size:13px; font-weight:bold;">Search & Spawn Any Object:</label>
+        <input type="text" id="searchInput" placeholder="e.g. big blue house, racecar, tree...">
         <button class="spawn-btn" onclick="spawnSearchedObject()">Search & Spawn</button>
     </div>
 
     <div id="transform-bar">
-        <span><b>Transform:</b></span>
+        <span><b>Tools:</b></span>
         <button class="t-btn" onclick="transformSelected('scaleUp')">Scale +</button>
         <button class="t-btn" onclick="transformSelected('scaleDown')">Scale -</button>
         <button class="t-btn" onclick="transformSelected('rotate')">Rotate 45°</button>
@@ -115,7 +116,7 @@
             peer.on('open', (id) => {
                 myId = id;
                 isHost = true;
-                roomInfo.innerHTML = `Room Code: <b>${id}</b><br>Give this to your friend! Waiting...`;
+                roomInfo.innerHTML = `Room Code: <b>${id}</b><br>Give this code to your friend! Waiting...`;
             });
             peer.on('connection', (connection) => {
                 conn = connection;
@@ -141,7 +142,7 @@
         });
 
         function setupConnection() {
-            conn.on('open', () => { roomInfo.innerHTML = "Connected to friend!"; });
+            conn.on('open', () => { roomInfo.innerHTML = "Connected to friend successfully!"; });
             conn.on('data', (data) => {
                 if (data.type === 'pos') {
                     updateRemotePlayer(data);
@@ -164,10 +165,10 @@
         renderer.shadowMap.enabled = true;
         document.body.appendChild(renderer.domElement);
 
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.65);
         scene.add(ambientLight);
 
-        const sunLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        const sunLight = new THREE.DirectionalLight(0xffffff, 0.85);
         sunLight.position.set(50, 100, 50);
         sunLight.castShadow = true;
         scene.add(sunLight);
@@ -176,8 +177,8 @@
         const plotsGroup = new THREE.Group();
         scene.add(plotsGroup);
 
-        const plotSize = 70;
-        const plotSpacing = 90;
+        const plotSize = 75;
+        const plotSpacing = 95;
         const plotPositions = [
             { x: 0, z: 0 }, { x: plotSpacing, z: 0 }, { x: -plotSpacing, z: 0 },
             { x: 0, z: plotSpacing }, { x: plotSpacing, z: plotSpacing }, { x: -plotSpacing, z: plotSpacing }
@@ -194,8 +195,8 @@
             plotBase.position.set(p.x, -0.5, p.z);
             plotsGroup.add(plotBase);
 
-            const padGeo = new THREE.CylinderGeometry(3, 3, 0.3, 32);
-            const padMat = new THREE.MeshStandardMaterial({ color: 0x00bcd4, emissive: 0x00bcd4, emissiveIntensity: 0.6 });
+            const padGeo = new THREE.CylinderGeometry(3.5, 3.5, 0.3, 32);
+            const padMat = new THREE.MeshStandardMaterial({ color: 0x00bcd4, emissive: 0x00bcd4, emissiveIntensity: 0.7 });
             const fastPad = new THREE.Mesh(padGeo, padMat);
             fastPad.position.set(p.x, 0.1, p.z);
             plotsGroup.add(fastPad);
@@ -245,7 +246,7 @@
             remotePlayer.rotation.y = data.ry;
         }
 
-        // --- SEARCH, RESIZE, ROTATE & CLONE SYSTEM ---
+        // --- ADVANCED AI SEARCH & PROCEDURAL GENERATOR ---
         function spawnSearchedObject() {
             const query = document.getElementById('searchInput').value.trim();
             if (!query) return;
@@ -269,25 +270,47 @@
             else if (lowerQuery.includes('green')) color = 0x4caf50;
             else if (lowerQuery.includes('yellow')) color = 0xffeb3b;
             else if (lowerQuery.includes('pink')) color = 0xe91e63;
+            else if (lowerQuery.includes('purple')) color = 0x9c27b0;
             else if (lowerQuery.includes('white')) color = 0xffffff;
 
             const mat = new THREE.MeshStandardMaterial({ color: color, roughness: 0.3 });
 
-            let mesh;
-            if (lowerQuery.includes('sphere') || lowerQuery.includes('ball')) {
-                mesh = new THREE.Mesh(new THREE.SphereGeometry(1.5, 24, 24), mat);
-            } else if (lowerQuery.includes('cylinder') || lowerQuery.includes('pillar') || lowerQuery.includes('tube')) {
-                mesh = new THREE.Mesh(new THREE.CylinderGeometry(1, 1, 3, 24), mat);
-            } else if (lowerQuery.includes('cone') || lowerQuery.includes('pyramid')) {
-                mesh = new THREE.Mesh(new THREE.ConeGeometry(1.5, 3, 16), mat);
-            } else if (lowerQuery.includes('house') || lowerQuery.includes('building')) {
-                mesh = new THREE.Mesh(new THREE.BoxGeometry(4, 3, 4), mat);
+            if (lowerQuery.includes('house') || lowerQuery.includes('home') || lowerQuery.includes('building')) {
+                const base = new THREE.Mesh(new THREE.BoxGeometry(5, 3.5, 5), mat);
+                base.position.y = 1.75;
+                group.add(base);
+                const roof = new THREE.Mesh(new THREE.ConeGeometry(4, 2.5, 4), new THREE.MeshStandardMaterial({ color: 0x8b0000 }));
+                roof.position.y = 4.75;
+                roof.rotation.y = Math.PI / 4;
+                group.add(roof);
+            } else if (lowerQuery.includes('car') || lowerQuery.includes('racecar') || lowerQuery.includes('vehicle')) {
+                const body = new THREE.Mesh(new THREE.BoxGeometry(3, 1.2, 5.5), mat);
+                body.position.y = 1;
+                group.add(body);
+                const cabin = new THREE.Mesh(new THREE.BoxGeometry(2.2, 1, 2.5), new THREE.MeshStandardMaterial({ color: 0x111111 }));
+                cabin.position.set(0, 2, -0.2);
+                group.add(cabin);
+            } else if (lowerQuery.includes('tree') || lowerQuery.includes('plant')) {
+                const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.6, 3.5, 8), new THREE.MeshStandardMaterial({ color: 0x8b5a2b }));
+                trunk.position.y = 1.75;
+                group.add(trunk);
+                const leaves = new THREE.Mesh(new THREE.SphereGeometry(2.2, 16, 16), new THREE.MeshStandardMaterial({ color: 0x2e8b57 }));
+                leaves.position.y = 4.2;
+                group.add(leaves);
+            } else if (lowerQuery.includes('sphere') || lowerQuery.includes('ball')) {
+                const sphere = new THREE.Mesh(new THREE.SphereGeometry(1.5, 24, 24), mat);
+                sphere.position.y = 1.5;
+                group.add(sphere);
+            } else if (lowerQuery.includes('cylinder') || lowerQuery.includes('pillar')) {
+                const cyl = new THREE.Mesh(new THREE.CylinderGeometry(1, 1, 3, 24), mat);
+                cyl.position.y = 1.5;
+                group.add(cyl);
             } else {
-                mesh = new THREE.Mesh(new THREE.BoxGeometry(2, 2, 2), mat);
+                const box = new THREE.Mesh(new THREE.BoxGeometry(2.5, 2.5, 2.5), mat);
+                box.position.y = 1.25;
+                group.add(box);
             }
 
-            mesh.position.y = 1;
-            group.add(mesh);
             group.position.set(x, y, z);
             group.scale.set(sx, sy, sz);
             group.rotation.set(rx, ry, rz);
@@ -339,7 +362,6 @@
         let animTimer = 0;
 
         document.addEventListener('keydown', (e) => {
-            // Toggle mouse lock with 'V'
             if (e.code === 'KeyV') {
                 if (controls.isLocked) {
                     controls.unlock();
@@ -354,7 +376,7 @@
             if (e.code === 'KeyS') moveBackward = true;
             if (e.code === 'KeyA') moveLeft = true;
             if (e.code === 'KeyD') moveRight = true;
-            if (e.code === 'Space' && canJump) { velocity.y += 10; canJump = false; }
+            if (e.code === 'Space' && canJump) { velocity.y += 11; canJump = false; }
         });
 
         document.addEventListener('keyup', (e) => {
@@ -396,14 +418,14 @@
             if (controls.isLocked) {
                 velocity.x -= velocity.x * 10.0 * delta;
                 velocity.z -= velocity.z * 10.0 * delta;
-                velocity.y -= 25.0 * delta;
+                velocity.y -= 28.0 * delta;
 
                 direction.z = Number(moveForward) - Number(moveBackward);
                 direction.x = Number(moveRight) - Number(moveLeft);
                 direction.normalize();
 
-                if (moveForward || moveBackward) velocity.z -= direction.z * 35.0 * delta;
-                if (moveLeft || moveRight) velocity.x -= direction.x * 35.0 * delta;
+                if (moveForward || moveBackward) velocity.z -= direction.z * 38.0 * delta;
+                if (moveLeft || moveRight) velocity.x -= direction.x * 38.0 * delta;
 
                 controls.moveRight(-velocity.x * delta);
                 controls.moveForward(-velocity.z * delta);
@@ -422,11 +444,11 @@
 
                 const isMoving = moveForward || moveBackward || moveLeft || moveRight;
                 if (isMoving) {
-                    animTimer += delta * 12;
-                    leftArm.rotation.x = Math.sin(animTimer) * 0.6;
-                    rightArm.rotation.x = -Math.sin(animTimer) * 0.6;
-                    leftLeg.rotation.x = -Math.sin(animTimer) * 0.6;
-                    rightLeg.rotation.x = Math.sin(animTimer) * 0.6;
+                    animTimer += delta * 14;
+                    leftArm.rotation.x = Math.sin(animTimer) * 0.7;
+                    rightArm.rotation.x = -Math.sin(animTimer) * 0.7;
+                    leftLeg.rotation.x = -Math.sin(animTimer) * 0.7;
+                    rightLeg.rotation.x = Math.sin(animTimer) * 0.7;
                 } else {
                     leftArm.rotation.x = 0; rightArm.rotation.x = 0;
                     leftLeg.rotation.x = 0; rightLeg.rotation.x = 0;
@@ -434,9 +456,9 @@
 
                 fastPads.forEach(pad => {
                     const dist = new THREE.Vector2(camPos.x, camPos.z).distanceTo(new THREE.Vector2(pad.position.x, pad.position.z));
-                    if (dist < 3.0) {
+                    if (dist < 3.5) {
                         camera.position.x = pad.position.x;
-                        camera.position.z = pad.position.z + 8;
+                        camera.position.z = pad.position.z + 10;
                     }
                 });
 
