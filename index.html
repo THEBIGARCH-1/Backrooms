@@ -3,47 +3,65 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SkyPVP Arena - Character Select, First-Person Weapons & Jetpack Flames</title>
+    <title>SkyPVP Arena - Ultimate Edition (HD Details & Fluid Controls)</title>
     <style>
-        body { margin: 0; overflow: hidden; background-color: #0b1d3a; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; user-select: none; }
+        body { margin: 0; overflow: hidden; background-color: #030712; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; user-select: none; }
         #menu {
             position: absolute; width: 100%; height: 100%;
-            background: linear-gradient(135deg, #050b14, #1b365d);
+            background: linear-gradient(135deg, #020617, #0f172a, #1e1b4b);
             display: flex; flex-direction: column; justify-content: center; align-items: center;
             color: #fff; z-index: 20; text-align: center;
         }
-        h1 { font-size: 65px; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 6px; color: #00ffcc; text-shadow: 0 4px 20px rgba(0,255,204,0.4); }
-        p { color: #b0c4de; font-size: 19px; margin-bottom: 25px; }
-        .char-select { display: flex; gap: 20px; margin-bottom: 30px; }
+        h1 { font-size: 72px; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 8px; color: #38bdf8; text-shadow: 0 0 30px rgba(56,189,248,0.5); }
+        p { color: #94a3b8; font-size: 18px; margin-bottom: 25px; }
+        
+        #charSelectScreen {
+            position: absolute; width: 100%; height: 100%;
+            background: rgba(2, 6, 23, 0.96);
+            display: none; flex-direction: column; justify-content: center; align-items: center;
+            z-index: 30;
+        }
+        .preview-container {
+            width: 320px; height: 320px; background: rgba(56,189,248,0.03);
+            border: 2px solid #38bdf8; border-radius: 24px; margin-bottom: 25px;
+            box-shadow: 0 0 40px rgba(56,189,248,0.25); position: relative;
+        }
+        .char-options { display: flex; gap: 20px; margin-bottom: 30px; }
         .char-card {
-            background: rgba(255,255,255,0.05); border: 3px solid rgba(0,255,204,0.3); padding: 18px 28px;
+            background: rgba(255,255,255,0.03); border: 3px solid rgba(56,189,248,0.3); padding: 16px 32px;
             border-radius: 16px; cursor: pointer; transition: 0.2s; font-weight: bold; font-size: 18px; color: #fff;
         }
-        .char-card.selected { border-color: #ff0055; background: rgba(255,0,85,0.15); box-shadow: 0 0 20px rgba(255,0,85,0.4); }
+        .char-card.selected { border-color: #f43f5e; background: rgba(244,63,94,0.15); box-shadow: 0 0 25px rgba(244,63,94,0.4); }
+
         .btn {
-            background: #ff0055; color: #fff; border: none; padding: 16px 45px;
-            font-size: 19px; font-weight: bold; border-radius: 35px; cursor: pointer;
-            transition: 0.2s; box-shadow: 0 6px 20px rgba(255,0,85,0.5); text-transform: uppercase; margin: 10px;
+            background: #f43f5e; color: #fff; border: none; padding: 16px 45px;
+            font-size: 18px; font-weight: bold; border-radius: 40px; cursor: pointer;
+            transition: 0.2s; box-shadow: 0 6px 25px rgba(244,63,94,0.5); text-transform: uppercase; margin: 10px;
         }
-        .btn:hover { background: #ff3377; transform: scale(1.06); }
+        .btn:hover { background: #fb7185; transform: scale(1.05); }
+        .btn-secondary { background: #0ea5e9; box-shadow: 0 6px 25px rgba(14,165,233,0.5); }
+        .btn-secondary:hover { background: #38bdf8; }
+
         #hud {
             position: absolute; top: 20px; left: 20px; color: #fff; font-size: 18px;
-            font-weight: bold; pointer-events: none; z-index: 10; text-shadow: 0 2px 4px rgba(0,0,0,0.8);
-            background: rgba(0,0,0,0.6); padding: 14px 22px; border-radius: 14px; border: 1px solid rgba(0,255,204,0.3);
+            font-weight: bold; pointer-events: none; z-index: 10; text-shadow: 0 2px 6px rgba(0,0,0,0.9);
+            background: rgba(15,23,42,0.8); padding: 16px 24px; border-radius: 16px; border: 1px solid rgba(56,189,248,0.3);
+            backdrop-filter: blur(8px);
         }
         #loadout-bar {
             position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
-            display: flex; gap: 12px; background: rgba(0,0,0,0.75); padding: 12px 24px;
-            border-radius: 18px; z-index: 10; backdrop-filter: blur(6px); color: #fff; font-size: 15px; font-weight: bold;
+            display: flex; gap: 14px; background: rgba(15,23,42,0.85); padding: 14px 28px;
+            border-radius: 20px; z-index: 10; backdrop-filter: blur(8px); color: #fff; font-size: 15px; font-weight: bold;
+            border: 1px solid rgba(56,189,248,0.2);
         }
         .slot {
-            background: #222; border: 2px solid #00ffcc; padding: 10px 18px; border-radius: 10px; text-align: center;
-            box-shadow: 0 4px 10px rgba(0,255,204,0.2);
+            background: #1e293b; border: 2px solid #38bdf8; padding: 10px 20px; border-radius: 12px; text-align: center;
+            box-shadow: 0 4px 15px rgba(56,189,248,0.15); transition: 0.2s;
         }
-        .slot.active { background: #00ffcc; color: #000; }
+        .slot.active { background: #38bdf8; color: #020617; box-shadow: 0 0 20px rgba(56,189,248,0.5); }
         #crosshair {
-            position: absolute; top: 50%; left: 50%; width: 10px; height: 10px;
-            background-color: rgba(0, 255, 204, 0.9); border: 2px solid #000; border-radius: 50%;
+            position: absolute; top: 50%; left: 50%; width: 8px; height: 8px;
+            background-color: rgba(56, 189, 248, 0.95); border: 2px solid #000; border-radius: 50%;
             transform: translate(-50%, -50%); pointer-events: none; z-index: 10;
         }
     </style>
@@ -55,41 +73,102 @@
 
     <div id="menu">
         <h1>SkyPVP Arena</h1>
-        <p>Choose your character, grab your weapon, and enter the battle!</p>
-        <div class="char-select">
-            <div class="char-card selected" id="selectAstronaut" onclick="selectCharacter('astronaut')">🧑‍🚀 Astronaut</div>
-            <div class="char-card" id="selectAlien" onclick="selectCharacter('alien')">👽 Alien</div>
-        </div>
+        <p>Ultra HD Visuals • Fluid Jetpack Mechanics • Seamless Bridges</p>
         <div>
-            <button class="btn" id="startBtn">Singleplayer Practice</button>
-            <button class="btn" id="hostOnlineBtn" style="background:#00bcd4;">Host Arena Match</button>
-            <button class="btn" id="joinOnlineBtn" style="background:#e91e63;">Join Match Code</button>
+            <button class="btn" id="startBtn">Deploy Practice</button>
+            <button class="btn btn-secondary" id="openCharScreenBtn">Character Wardrobe</button>
+            <button class="btn btn-secondary" id="hostOnlineBtn" style="background:#8b5cf6;">Host Multiplayer</button>
+            <button class="btn" id="joinOnlineBtn" style="background:#ec4899;">Join Multiplayer</button>
         </div>
-        <div id="roomInfo" style="margin-top: 18px; font-size: 17px; color: #00ffcc;"></div>
+        <div id="roomInfo" style="margin-top: 18px; font-size: 17px; color: #38bdf8;"></div>
+    </div>
+
+    <div id="charSelectScreen">
+        <h2 style="color:#38bdf8; font-size: 40px; text-transform: uppercase; margin-bottom: 8px;">Select Operative</h2>
+        <p style="color:#94a3b8; margin-bottom: 25px;">Customized 3D Character Preview</p>
+        
+        <div class="preview-container" id="previewCanvasContainer"></div>
+
+        <div class="char-options">
+            <div class="char-card selected" id="cardAstronaut" onclick="previewCharacter('astronaut')">🧑‍🚀 Astronaut</div>
+            <div class="char-card" id="cardAlien" onclick="previewCharacter('alien')">👽 Alien</div>
+        </div>
+
+        <div>
+            <button class="btn" onclick="closeCharScreen()">Confirm & Return</button>
+        </div>
     </div>
 
     <div id="hud">
-        Health: <span id="healthDisplay" style="color:#ff0055;">100 / 100</span><br>
-        Score / Kills: <span id="scoreDisplay" style="color:#00ffcc;">0</span><br>
-        <span style="font-size:13px; color:#aaa;">WASD: Move | E: Sword | Q: Cannon | Shift: Jetpack Fly & Flames | Click: Attack</span>
+        Health: <span id="healthDisplay" style="color:#f43f5e;">100 / 100</span><br>
+        Score / Kills: <span id="scoreDisplay" style="color:#38bdf8;">0</span><br>
+        <span style="font-size:13px; color:#64748b;">WASD: Move | E: Sword | Q: Cannon | Shift: Hold to Fly Up (Release to Descend) | Click: Attack</span>
     </div>
 
     <div id="loadout-bar">
         <div class="slot active" id="slot1">[E] Energy Sword</div>
         <div class="slot" id="slot2">[Q] Hand Cannon</div>
-        <div class="slot" id="slot3">[Shift] Jetpack Flight</div>
+        <div class="slot" id="slot3">[Shift] Jetpack Lift</div>
     </div>
 
     <div id="crosshair"></div>
 
     <script>
-        // --- CHARACTER CONFIG ---
-        let chosenCharacter = 'astronaut';
+        // --- CHARACTER PREVIEW SETUP ---
+        let previewScene, previewCamera, previewRenderer, previewModel;
+        let selectedCharType = 'astronaut';
 
-        function selectCharacter(type) {
-            chosenCharacter = type;
-            document.getElementById('selectAstronaut').classList.toggle('selected', type === 'astronaut');
-            document.getElementById('selectAlien').classList.toggle('selected', type === 'alien');
+        function initPreviewScene() {
+            const container = document.getElementById('previewCanvasContainer');
+            previewScene = new THREE.Scene();
+            previewCamera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 100);
+            previewCamera.position.set(0, 3.5, 6.0);
+            previewCamera.lookAt(0, 2, 0);
+
+            previewRenderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            previewRenderer.setSize(container.clientWidth, container.clientHeight);
+            container.appendChild(previewRenderer.domElement);
+
+            const light = new THREE.DirectionalLight(0xffffff, 1.5);
+            light.position.set(5, 12, 6);
+            previewScene.add(light);
+            previewScene.add(new THREE.AmbientLight(0xffffff, 0.9));
+
+            updatePreviewModel(selectedCharType);
+            animatePreview();
+        }
+
+        function updatePreviewModel(type) {
+            if (previewModel) previewScene.remove(previewModel);
+            previewModel = createCharacterGeometry(type);
+            previewModel.position.set(0, 0.4, 0);
+            previewScene.add(previewModel);
+        }
+
+        function previewCharacter(type) {
+            selectedCharType = type;
+            document.getElementById('cardAstronaut').classList.toggle('selected', type === 'astronaut');
+            document.getElementById('cardAlien').classList.toggle('selected', type === 'alien');
+            updatePreviewModel(type);
+        }
+
+        function animatePreview() {
+            if (document.getElementById('charSelectScreen').style.display === 'flex' && previewModel) {
+                previewModel.rotation.y += 0.015;
+                previewRenderer.render(previewScene, previewCamera);
+            }
+            requestAnimationFrame(animatePreview);
+        }
+
+        document.getElementById('openCharScreenBtn').addEventListener('click', () => {
+            document.getElementById('menu').style.display = 'none';
+            document.getElementById('charSelectScreen').style.display = 'flex';
+            if (!previewRenderer) initPreviewScene();
+        });
+
+        function closeCharScreen() {
+            document.getElementById('charSelectScreen').style.display = 'none';
+            document.getElementById('menu').style.display = 'flex';
         }
 
         // --- MULTIPLAYER SETUP ---
@@ -104,7 +183,7 @@
 
         document.getElementById('startBtn').addEventListener('click', () => {
             menu.style.display = 'none';
-            initPlayerModel(chosenCharacter);
+            initPlayerModel(selectedCharType);
             controls.lock();
         });
 
@@ -114,13 +193,13 @@
             peer.on('open', (id) => {
                 myId = id;
                 isHost = true;
-                roomInfo.innerHTML = `Arena Code: <b>${id}</b><br>Share with your friend! Waiting...`;
+                roomInfo.innerHTML = `Arena Match Code: <b>${id}</b><br>Share with your friend! Waiting...`;
             });
             peer.on('connection', (connection) => {
                 conn = connection;
                 setupConnection();
                 menu.style.display = 'none';
-                initPlayerModel(chosenCharacter);
+                initPlayerModel(selectedCharType);
                 controls.lock();
             });
         });
@@ -136,7 +215,7 @@
                 conn = peer.connect(friendId);
                 setupConnection();
                 menu.style.display = 'none';
-                initPlayerModel(chosenCharacter);
+                initPlayerModel(selectedCharType);
                 controls.lock();
             });
         });
@@ -149,7 +228,6 @@
                         remotePlayer.visible = true;
                         remotePlayer.position.set(data.x, data.y, data.z);
                         remotePlayer.rotation.y = data.ry;
-                        // Handle remote player jetpack flame visibility
                         if (remotePlayer.userData.flames) {
                             remotePlayer.userData.flames.visible = data.isFlying;
                         }
@@ -170,10 +248,10 @@
             });
         }
 
-        // --- 3D SCENE SETUP ---
+        // --- 3D SCENE SETUP (ULTRA HD GRAPHICS) ---
         const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x0b1d3a);
-        scene.fog = new THREE.FogExp2(0x0b1d3a, 0.005);
+        scene.background = new THREE.Color(0x020617);
+        scene.fog = new THREE.FogExp2(0x020617, 0.0035);
 
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.5, 1000);
         camera.position.set(0, 15, 0);
@@ -181,108 +259,108 @@
         const renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         document.body.appendChild(renderer.domElement);
 
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
-        scene.add(ambientLight);
-
-        const sunLight = new THREE.DirectionalLight(0xffffff, 1.2);
-        sunLight.position.set(40, 90, 40);
+        scene.add(new THREE.AmbientLight(0xffffff, 0.6));
+        const sunLight = new THREE.DirectionalLight(0xfff5ea, 1.6);
+        sunLight.position.set(60, 120, 60);
         sunLight.castShadow = true;
+        sunLight.shadow.mapSize.width = 2048;
+        sunLight.shadow.mapSize.height = 2048;
         scene.add(sunLight);
 
-        // --- REALISTIC ISLANDS & BRIDGES (NO WEIRD PILLARS) ---
+        // --- HIGH-DETAIL ISLANDS & TEXTURED BRIDGES (NO WEIRD PILLARS) ---
         const solidObjects = [];
         const islandData = [
-            { x: 0, y: 10, z: 0, size: 35 },
-            { x: 70, y: 10, z: 0, size: 25 },
-            { x: -70, y: 10, z: 0, size: 25 },
-            { x: 0, y: 10, z: 70, size: 25 },
-            { x: 0, y: 10, z: -70, size: 25 }
+            { x: 0, y: 10, z: 0, size: 40 },
+            { x: 80, y: 10, z: 0, size: 28 },
+            { x: -80, y: 10, z: 0, size: 28 },
+            { x: 0, y: 10, z: 80, size: 28 },
+            { x: 0, y: 10, z: -80, size: 28 }
         ];
 
         islandData.forEach(data => {
-            // Rugged stone base
-            const rockGeo = new THREE.ConeGeometry(data.size, data.size * 0.8, 8);
-            const rockMat = new THREE.MeshStandardMaterial({ color: 0x4a5568, roughness: 0.9, flatShading: true });
+            // Rugged multi-layered rock formations
+            const rockGeo = new THREE.ConeGeometry(data.size, data.size * 0.9, 10);
+            const rockMat = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.95, metalness: 0.1, flatShading: true });
             const rock = new THREE.Mesh(rockGeo, rockMat);
-            rock.position.set(data.x, data.y - (data.size * 0.4), data.z);
+            rock.position.set(data.x, data.y - (data.size * 0.45), data.z);
             rock.rotation.x = Math.PI;
+            rock.castShadow = true;
+            rock.receiveShadow = true;
             scene.add(rock);
 
-            // Detailed textured top surface (Mossy Grass Layer)
-            const topGeo = new THREE.CylinderGeometry(data.size, data.size * 0.95, 3, 24);
-            const topMat = new THREE.MeshStandardMaterial({ color: 0x2d6a4f, roughness: 0.7 });
+            // Detailed Mossy Grass Top Layer
+            const topGeo = new THREE.CylinderGeometry(data.size, data.size * 0.96, 3.5, 32);
+            const topMat = new THREE.MeshStandardMaterial({ color: 0x15803d, roughness: 0.85 });
             const top = new THREE.Mesh(topGeo, topMat);
             top.position.set(data.x, data.y, data.z);
+            top.castShadow = true;
+            top.receiveShadow = true;
             scene.add(top);
             solidObjects.push({ x: data.x, z: data.z, radius: data.size, y: data.y });
         });
 
-        // Connecting Bridges
+        // Connecting Stone Bridges
         const bridgeData = [
-            { startX: 0, startZ: 0, endX: 70, endZ: 0 },
-            { startX: 0, startZ: 0, endX: -70, endZ: 0 },
-            { startX: 0, startZ: 0, endX: 0, endZ: 70 },
-            { startX: 0, startZ: 0, endX: 0, endZ: -70 }
+            { startX: 0, startZ: 0, endX: 80, endZ: 0 },
+            { startX: 0, startZ: 0, endX: -80, endZ: 0 },
+            { startX: 0, startZ: 0, endX: 0, endZ: 80 },
+            { startX: 0, startZ: 0, endX: 0, endZ: -80 }
         ];
 
         const bridgeColliders = [];
         bridgeData.forEach(b => {
             const length = Math.hypot(b.endX - b.startX, b.endZ - b.startZ);
-            const bridgeGeo = new THREE.BoxGeometry(6, 1, length);
-            const bridgeMat = new THREE.MeshStandardMaterial({ color: 0x555b6e, roughness: 0.6 });
+            const bridgeGeo = new THREE.BoxGeometry(7, 1.2, length);
+            const bridgeMat = new THREE.MeshStandardMaterial({ color: 0x475569, roughness: 0.7, metalness: 0.2 });
             const bridge = new THREE.Mesh(bridgeGeo, bridgeMat);
             
             const centerX = (b.startX + b.endX) / 2;
             const centerZ = (b.startZ + b.endZ) / 2;
             bridge.position.set(centerX, 10, centerZ);
+            bridge.castShadow = true;
+            bridge.receiveShadow = true;
 
             if (b.startX !== b.endX) bridge.rotation.y = Math.PI / 2;
             scene.add(bridge);
-            bridgeColliders.push({ x1: Math.min(b.startX, b.endX) - 4, x2: Math.max(b.startX, b.endX) + 4, z1: Math.min(b.startZ, b.endZ) - 4, z2: Math.max(b.startZ, b.endZ) + 4, y: 10 });
+            bridgeColliders.push({ x1: Math.min(b.startX, b.endX) - 4.5, x2: Math.max(b.startX, b.endX) + 4.5, z1: Math.min(b.startZ, b.endZ) - 4.5, z2: Math.max(b.startZ, b.endZ) + 4.5, y: 10 });
         });
 
-        // --- FIRST-PERSON WEAPON MODEL ATTACHED TO CAMERA ---
+        // --- FIRST-PERSON WEAPONS (NO VISIBLE HEAD/EYES) ---
         const weaponGroup = new THREE.Group();
         camera.add(weaponGroup);
         scene.add(camera);
 
         let swordMesh, cannonMesh;
-
         function buildFirstPersonWeapons() {
-            // Energy Sword Viewmodel
             swordMesh = new THREE.Group();
-            const hilt = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.4, 12), new THREE.MeshStandardMaterial({ color: 0x333333 }));
+            const hilt = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.35, 12), new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.8 }));
             hilt.rotation.x = Math.PI / 2;
-            const blade = new THREE.Mesh(new THREE.BoxGeometry(0.1, 1.2, 0.04), new THREE.MeshStandardMaterial({ color: 0x00ffcc, emissive: 0x00ffcc, emissiveIntensity: 0.8 }));
-            blade.position.set(0, 0.7, 0);
+            const blade = new THREE.Mesh(new THREE.BoxGeometry(0.08, 1.1, 0.03), new THREE.MeshStandardMaterial({ color: 0x38bdf8, emissive: 0x38bdf8, emissiveIntensity: 0.9 }));
+            blade.position.set(0, 0.65, 0);
             swordMesh.add(hilt);
             swordMesh.add(blade);
-            swordMesh.position.set(0.4, -0.3, -0.6);
+            swordMesh.position.set(0.38, -0.28, -0.55);
             weaponGroup.add(swordMesh);
 
-            // Hand Cannon Viewmodel
             cannonMesh = new THREE.Group();
-            const cannonBarrel = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.15, 1.0, 16), new THREE.MeshStandardMaterial({ color: 0xff5500, metalness: 0.8 }));
-            cannonBarrel.rotation.x = Math.PI / 2;
-            cannonMesh.add(cannonBarrel);
-            cannonMesh.position.set(0.4, -0.35, -0.7);
+            const barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.13, 0.9, 16), new THREE.MeshStandardMaterial({ color: 0xf43f5e, metalness: 0.85, roughness: 0.2 }));
+            barrel.rotation.x = Math.PI / 2;
+            cannonMesh.add(barrel);
+            cannonMesh.position.set(0.38, -0.32, -0.65);
             cannonMesh.visible = false;
             weaponGroup.add(cannonMesh);
         }
         buildFirstPersonWeapons();
 
-        // --- CHARACTER MODELS & JETPACK FLAMES ---
-        let localPlayerModel;
-        let localFlames;
-        let currentSlot = 1; // 1: Sword (E), 2: Cannon (Q), 3: Jetpack (Shift)
-
+        // --- 3D CHARACTER BUILDER (3RD PERSON MODEL FOR OTHER PLAYERS) ---
         function createCharacterGeometry(type) {
             const group = new THREE.Group();
             if (type === 'astronaut') {
-                const suitMat = new THREE.MeshStandardMaterial({ color: 0xf8f9fa, roughness: 0.4 });
-                const visorMat = new THREE.MeshStandardMaterial({ color: 0x00ffcc, metalness: 0.9, roughness: 0.1 });
+                const suitMat = new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.3 });
+                const visorMat = new THREE.MeshStandardMaterial({ color: 0x38bdf8, metalness: 0.9, roughness: 0.1 });
                 
                 const body = new THREE.Mesh(new THREE.SphereGeometry(1.0, 16, 16), suitMat);
                 body.position.y = 2.2;
@@ -296,9 +374,8 @@
                 visor.position.set(0, 3.6, -0.3);
                 group.add(visor);
             } else {
-                // Alien Character
-                const alienMat = new THREE.MeshStandardMaterial({ color: 0x38b000, roughness: 0.3 });
-                const eyeMat = new THREE.MeshStandardMaterial({ color: 0x000000 });
+                const alienMat = new THREE.MeshStandardMaterial({ color: 0x10b981, roughness: 0.3 });
+                const eyeMat = new THREE.MeshStandardMaterial({ color: 0x020617 });
 
                 const body = new THREE.Mesh(new THREE.SphereGeometry(0.9, 16, 16), alienMat);
                 body.position.y = 2.0;
@@ -318,15 +395,13 @@
                 group.add(eyeR);
             }
 
-            // Jetpack Tank
-            const jetpackMat = new THREE.MeshStandardMaterial({ color: 0x212529 });
+            const jetpackMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, metalness: 0.6 });
             const jetpack = new THREE.Mesh(new THREE.BoxGeometry(0.9, 1.2, 0.5), jetpackMat);
             jetpack.position.set(0, 2.4, 0.5);
             group.add(jetpack);
 
-            // Jetpack Flames (Dynamic Particle/Cone)
-            const flameMat = new THREE.MeshStandardMaterial({ color: 0xff5400, emissive: 0xff5400, emissiveIntensity: 1.5, transparent: true, opacity: 0.8 });
-            const flames = new THREE.Mesh(new THREE.ConeGeometry(0.4, 1.5, 8), flameMat);
+            const flameMat = new THREE.MeshStandardMaterial({ color: 0xf97316, emissive: 0xf97316, emissiveIntensity: 2.0, transparent: true, opacity: 0.85 });
+            const flames = new THREE.Mesh(new THREE.ConeGeometry(0.4, 1.6, 8), flameMat);
             flames.rotation.x = Math.PI;
             flames.position.set(0, 1.3, 0.6);
             flames.visible = false;
@@ -335,6 +410,9 @@
 
             return group;
         }
+
+        let localPlayerModel;
+        let currentSlot = 1;
 
         function initPlayerModel(type) {
             localPlayerModel = createCharacterGeometry(type);
@@ -351,12 +429,12 @@
             scene.add(remotePlayer);
         }
 
-        // --- PROJECTILES SYSTEM ---
+        // --- PROJECTILES & COMBAT ---
         const activeProjectiles = [];
 
         function spawnProjectile(x, y, z, dx, dy, dz, isCannon, sendNetwork) {
-            const geo = isCannon ? new THREE.SphereGeometry(0.8, 16, 16) : new THREE.BoxGeometry(0.3, 0.3, 2.0);
-            const mat = new THREE.MeshStandardMaterial({ color: isCannon ? 0xff5500 : 0x00ffcc, emissive: isCannon ? 0xff3300 : 0x00ffcc, emissiveIntensity: 1.0 });
+            const geo = isCannon ? new THREE.SphereGeometry(0.8, 16, 16) : new THREE.BoxGeometry(0.3, 0.3, 2.2);
+            const mat = new THREE.MeshStandardMaterial({ color: isCannon ? 0xf43f5e : 0x38bdf8, emissive: isCannon ? 0xf43f5e : 0x38bdf8, emissiveIntensity: 1.2 });
             const proj = new THREE.Mesh(geo, mat);
             proj.position.set(x, y, z);
             scene.add(proj);
@@ -364,7 +442,7 @@
             activeProjectiles.push({
                 mesh: proj,
                 dir: new THREE.Vector3(dx, dy, dz).normalize(),
-                speed: isCannon ? 35 : 55,
+                speed: isCannon ? 38 : 60,
                 damage: isCannon ? 40 : 20,
                 life: 3.0
             });
@@ -377,7 +455,7 @@
         let playerHealth = 100;
         let playerScore = 0;
 
-        window.addEventListener('mousedown', (e) => {
+        window.addEventListener('mousedown', () => {
             if (!controls.isLocked) return;
             const dir = new THREE.Vector3();
             camera.getWorldDirection(dir);
@@ -390,7 +468,7 @@
             }
         });
 
-        // --- CONTROLS & JETPACK PHYSICS ---
+        // --- CONTROLS & FLUID JETPACK MECHANICS ---
         const controls = new THREE.PointerLockControls(camera, document.body);
         let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false, canJump = false, isJetpacking = false;
         let velocity = new THREE.Vector3();
@@ -414,7 +492,7 @@
             if (e.code === 'KeyD') moveRight = true;
             
             if (e.code === 'Space' && canJump) {
-                velocity.y += 12;
+                velocity.y += 13;
                 canJump = false;
             }
         });
@@ -451,16 +529,16 @@
                 velocity.x -= velocity.x * 10.0 * delta;
                 velocity.z -= velocity.z * 10.0 * delta;
 
+                // Jetpack behavior: Hold Shift to fly up, release to descend/fall
                 if (isJetpacking && currentSlot === 3) {
-                    velocity.y += 30.0 * delta;
-                    velocity.y = Math.min(velocity.y, 14);
+                    velocity.y += 32.0 * delta;
+                    velocity.y = Math.min(velocity.y, 16);
                     if (localPlayerModel && localPlayerModel.userData.flames) {
                         localPlayerModel.userData.flames.visible = true;
-                        // Flicker animation effect for jetpack flames
-                        localPlayerModel.userData.flames.scale.set(1 + Math.random() * 0.3, 1 + Math.random() * 0.4, 1 + Math.random() * 0.3);
+                        localPlayerModel.userData.flames.scale.set(1 + Math.random() * 0.4, 1 + Math.random() * 0.5, 1 + Math.random() * 0.4);
                     }
                 } else {
-                    velocity.y -= 30.0 * delta;
+                    velocity.y -= 32.0 * delta; // Gravity pull when shift released
                     if (localPlayerModel && localPlayerModel.userData.flames) {
                         localPlayerModel.userData.flames.visible = false;
                     }
@@ -470,8 +548,8 @@
                 direction.x = Number(moveRight) - Number(moveLeft);
                 direction.normalize();
 
-                if (moveForward || moveBackward) velocity.z -= direction.z * 40.0 * delta;
-                if (moveLeft || moveRight) velocity.x -= direction.x * 40.0 * delta;
+                if (moveForward || moveBackward) velocity.z -= direction.z * 45.0 * delta;
+                if (moveLeft || moveRight) velocity.x -= direction.x * 45.0 * delta;
 
                 controls.moveRight(-velocity.x * delta);
                 controls.moveForward(-velocity.z * delta);
@@ -483,8 +561,8 @@
 
                 solidObjects.forEach(island => {
                     const distXZ = Math.hypot(camera.position.x - island.x, camera.position.z - island.z);
-                    const surfaceTopY = island.y + 1.5;
-                    const surfaceBottomY = island.y - 1.5;
+                    const surfaceTopY = island.y + 1.75;
+                    const surfaceBottomY = island.y - 1.75;
 
                     if (distXZ < island.radius && playerFootY <= surfaceTopY && playerFootY >= surfaceBottomY && velocity.y <= 0) {
                         camera.position.y = surfaceTopY + 3.5;
@@ -496,7 +574,7 @@
 
                 bridgeColliders.forEach(b => {
                     if (camera.position.x >= b.x1 && camera.position.x <= b.x2 && camera.position.z >= b.z1 && camera.position.z <= b.z2) {
-                        const surfaceTopY = b.y + 0.5;
+                        const surfaceTopY = b.y + 0.6;
                         if (playerFootY <= surfaceTopY + 1 && playerFootY >= surfaceTopY - 2 && velocity.y <= 0) {
                             camera.position.y = surfaceTopY + 3.5;
                             velocity.y = 0;
